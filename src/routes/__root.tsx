@@ -77,11 +77,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Aurelia — Fine Gold & Silver Jewellery" },
+      { name: "description", content: "Aurelia crafts heirloom-grade gold and silver jewellery — rakhis, murtis, necklaces, chains, bracelets, coins and gift collections." },
+      { name: "author", content: "Aurelia" },
+      { property: "og:title", content: "Aurelia — Fine Gold & Silver Jewellery" },
+      { property: "og:description", content: "Modern luxury, timeless craft." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
@@ -91,6 +91,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Jost:wght@300;400;500;600&display=swap" },
     ],
   }),
   shellComponent: RootShell,
@@ -118,8 +121,13 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <CartProvider>
+        <SiteHeader />
+        <main className="min-h-screen">
+          <Outlet />
+        </main>
+        <SiteFooter />
+      </CartProvider>
     </QueryClientProvider>
   );
 }
