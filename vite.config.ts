@@ -13,7 +13,7 @@ export default defineConfig({
     server: { entry: "server" },
   },
   nitro: {
-    preset: 'static'
+    preset: 'netlify'
   },
   vite: {
     server: {
