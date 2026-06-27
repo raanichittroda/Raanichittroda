@@ -1,1 +1,9 @@
 node_modules
+.output
+.netlify
+dist
+.env
+.env.local
+.lovable
+.tanstack
+.wrangler
