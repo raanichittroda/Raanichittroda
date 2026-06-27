@@ -1,88 +1,152 @@
-import { Link } from "@tanstack/react-router";
-import { Minus, Plus, X } from "lucide-react";
+import { ShoppingBag, X, ArrowRight } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useCart } from "@/lib/cart";
-import { formatINR } from "@/lib/products";
+import { formatINR, getProduct } from "@/lib/products";
+import type { Product } from "@/lib/products";
+import { useEffect, useState } from "react";
 
 export function CartDrawer() {
-  const { isOpen, close, detailed, setQty, remove, subtotal, count } = useCart();
+  const { items, remove, setQty, count, isOpen, close } = useCart();
+  const navigate = useNavigate();
+  const [cartProducts, setCartProducts] = useState<(Product & { quantity: number })[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const fetchCartProducts = async () => {
+      setLoading(true);
+      const loaded: (Product & { quantity: number })[] = [];
+      for (const item of items) {
+        const p = await getProduct(item.productId);
+        if (p) loaded.push({ ...p, quantity: item.quantity });
+      }
+      setCartProducts(loaded);
+      setLoading(false);
+    };
+    fetchCartProducts();
+  }, [items, isOpen]);
+
+  const subtotal = cartProducts.reduce((acc, curr) => acc + curr.retail_price * curr.quantity, 0);
 
   return (
     <>
-      <div
-        onClick={close}
-        aria-hidden={!isOpen}
-        className={`fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm transition-opacity duration-300 ${
-          isOpen ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
+      <div 
+        className={`fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm transition-opacity ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`} 
+        onClick={close} 
       />
-      <aside
-        aria-label="Shopping cart"
-        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col bg-background shadow-2xl transition-transform duration-300 ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+      <div 
+        className={`fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-background shadow-2xl transition-transform duration-500 ease-in-out sm:w-[400px] ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
+        {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-5">
-          <div>
-            <p className="eyebrow">Your bag</p>
-            <p className="mt-1 font-display text-xl">{count} item{count === 1 ? "" : "s"}</p>
+          <div className="flex items-center gap-3">
+            <ShoppingBag className="h-5 w-5 text-gold" />
+            <h2 className="font-display text-xl text-foreground">Your Cart</h2>
+            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gold px-1.5 text-[10px] font-bold text-ink">
+              {count}
+            </span>
           </div>
-          <button onClick={close} aria-label="Close cart" className="p-2 text-foreground hover:text-gold">
+          <button onClick={close} className="p-2 text-muted-foreground transition-colors hover:text-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-6">
-          {detailed.length === 0 ? (
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
-              <span className="hairline" />
-              <p className="mt-6 font-display text-2xl">Your bag awaits</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Discover heirloom pieces, crafted to last generations.
-              </p>
-              <Link to="/collections" onClick={close} className="btn-gold mt-8">
-                Shop Collections
-              </Link>
+              <p className="text-muted-foreground">Loading cart...</p>
+            </div>
+          ) : cartProducts.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <ShoppingBag className="h-12 w-12 text-border" />
+              <p className="mt-4 font-display text-2xl text-foreground">Your cart is empty</p>
+              <p className="mt-2 text-sm text-muted-foreground">Looks like you haven't added anything yet.</p>
+              <button
+                onClick={() => {
+                  close();
+                  navigate({ to: "/collections" });
+                }}
+                className="btn-gold mt-8"
+              >
+                Start Shopping
+              </button>
             </div>
           ) : (
-            <ul className="space-y-6">
-              {detailed.map(({ product, quantity }) => (
-                <li key={product.id} className="grid grid-cols-[80px_1fr_auto] gap-4">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="h-24 w-20 object-cover"
-                    loading="lazy"
-                  />
-                  <div className="min-w-0">
-                    <p className="truncate font-display text-base text-foreground">{product.name}</p>
-                    <p className="mt-0.5 text-[10px] tracking-[0.24em] uppercase text-muted-foreground">
-                      {product.id}
-                    </p>
-                    <p className="mt-2 text-sm">{formatINR(product.price)}</p>
-                    <div className="mt-3 inline-flex items-center border border-border">
-                      <button onClick={() => setQty(product.id, quantity - 1)} className="grid h-7 w-7 place-items-center hover:text-gold" aria-label="Decrease">
-                        <Minus className="h-3 w-3" />
-                      </button>
-                      <span className="w-8 text-center text-xs">{quantity}</span>
-                      <button onClick={() => setQty(product.id, quantity + 1)} className="grid h-7 w-7 place-items-center hover:text-gold" aria-label="Increase">
-                        <Plus className="h-3 w-3" />
-                      </button>
+            <ul className="flex flex-col gap-6">
+              {cartProducts.map((item) => (
+                <li key={item.id} className="flex gap-4">
+                  <div className="h-24 w-20 shrink-0 overflow-hidden bg-secondary">
+                    <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="flex flex-1 flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between">
+                        <h3 className="font-display text-base text-foreground">
+                          <Link to="/product/$id" params={{ id: item.id }} onClick={close} className="hover:text-gold transition-colors">
+                            {item.name}
+                          </Link>
+                        </h3>
+                        <p className="text-sm font-medium text-foreground">
+                          {formatINR(item.retail_price * item.quantity)}
+                        </p>
+                      </div>
+                      <p className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">{item.id}</p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-wrap gap-1">
+                        {[10, 20, 50, 100].map(q => (
+                          <button 
+                            key={q} 
+                            onClick={() => setQty(item.id, q)} 
+                            className={`px-2 py-0.5 border text-[10px] font-medium rounded-full transition-colors ${item.quantity === q ? 'bg-gold border-gold text-ink' : 'border-border text-foreground hover:border-gold hover:text-gold'}`}
+                          >
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="inline-flex h-8 items-center border border-border bg-background rounded-md overflow-hidden">
+                          <button
+                            onClick={() => setQty(item.id, Math.max(1, item.quantity - 1))}
+                            className="flex h-full w-8 items-center justify-center text-muted-foreground hover:bg-secondary hover:text-gold transition-colors"
+                          >
+                            -
+                          </button>
+                          <input 
+                            type="number"
+                            value={item.quantity}
+                            min={1}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              if (!isNaN(val)) setQty(item.id, Math.max(1, val));
+                            }}
+                            className="w-12 text-center text-xs font-medium bg-transparent border-none focus:outline-none focus:ring-0 p-0"
+                          />
+                          <button
+                            onClick={() => setQty(item.id, item.quantity + 1)}
+                            className="flex h-full w-8 items-center justify-center text-muted-foreground hover:bg-secondary hover:text-gold transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => remove(item.id)}
+                          className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-red-500 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => remove(product.id)}
-                    aria-label="Remove"
-                    className="self-start text-muted-foreground hover:text-gold"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
                 </li>
               ))}
             </ul>
           )}
         </div>
 
-        {detailed.length > 0 && (
+        {/* Footer */}
+        {cartProducts.length > 0 && !loading && (
           <div className="border-t border-border bg-background px-6 py-5">
             <div className="flex items-baseline justify-between">
               <span className="text-[10px] tracking-[0.28em] uppercase text-muted-foreground">Subtotal</span>
@@ -91,12 +155,12 @@ export function CartDrawer() {
             <p className="mt-1 text-xs text-muted-foreground">
               Final pricing &amp; availability confirmed on WhatsApp.
             </p>
-            <Link to="/checkout" onClick={close} className="btn-gold mt-5 w-full">
+            <Link to="/checkout" onClick={close} className="btn-gold mt-5 w-full block text-center">
               Checkout via WhatsApp
             </Link>
           </div>
         )}
-      </aside>
+      </div>
     </>
   );
 }

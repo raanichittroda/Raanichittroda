@@ -1,16 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
-import { useState } from "react";
+import { Mail, MapPin, Phone } from "lucide-react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact — Aurelia" },
-      { name: "description", content: "Visit our Jaipur atelier or message us on WhatsApp — we reply personally within the hour." },
-      { property: "og:title", content: "Contact — Aurelia" },
-      { property: "og:description", content: "Speak with a human, on WhatsApp." },
+      { title: "Contact — Raani Chittroda" },
+      { name: "description", content: "Get in touch with Raani Chittroda for inquiries, bespoke orders, and appointments." },
+      { property: "og:title", content: "Contact — Raani Chittroda" },
+      { property: "og:description", content: "We look forward to hearing from you." },
     ],
   }),
   component: Contact,
@@ -25,19 +26,35 @@ const schema = z.object({
 function Contact() {
   const [form, setForm] = useState({ name: "", mobile: "", message: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const [settings, setSettings] = useState({
+    address: "123 Heritage Row, Old City\nJaipur, Rajasthan 302001",
+    phone: "+91 97850 90816",
+    email: "hello@raanichittroda.in"
+  });
+
+  const [cms, setCms] = useState({
+    contactPageText: "Bespoke commissions, gifting advice, or simply a hello — message us, and a human responds."
+  });
+
+  useEffect(() => {
+    async function loadData() {
+      const [{ data: sData }, { data: cData }] = await Promise.all([
+        supabase.from("settings").select("value").eq("key", "global_settings").single(),
+        supabase.from("settings").select("value").eq("key", "homepage_cms").single()
+      ]);
+      if (sData?.value) setSettings({ ...settings, ...(sData.value as any) });
+      if (cData?.value) setCms({ ...cms, ...(cData.value as any) });
+    }
+    loadData();
+  }, []);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const result = schema.safeParse(form);
-    if (!result.success) {
-      const errs: Record<string, string> = {};
-      result.error.issues.forEach((i) => (errs[i.path[0] as string] = i.message));
-      setErrors(errs);
-      return;
-    }
-    setErrors({});
-    const msg = `Hello Aurelia,\n\nName: ${form.name}\nMobile: ${form.mobile}\n\n${form.message}`;
+    if (!form.name || !form.mobile || !form.message) return;
+    const msg = `Hello Raani Chittroda,\n\nName: ${form.name}\nMobile: ${form.mobile}\n\n${form.message}`;
     window.open(buildWhatsAppUrl(msg), "_blank", "noopener,noreferrer");
+    setForm({ name: "", mobile: "", message: "" });
   }
 
   return (
@@ -47,7 +64,7 @@ function Contact() {
           <span className="eyebrow">Get in Touch</span>
           <h1 className="mt-3 font-display text-5xl sm:text-6xl">We'd love to hear from you</h1>
           <p className="mt-4 text-sm text-muted-foreground sm:text-base">
-            Bespoke commissions, gifting advice, or simply a hello — message us, and a human responds.
+            {cms.contactPageText}
           </p>
         </div>
       </section>
@@ -57,10 +74,9 @@ function Contact() {
           {/* Info */}
           <div className="space-y-8">
             {[
-              { icon: MapPin, t: "Atelier", d: "12, Heritage Lane, Johari Bazaar\nJaipur 302003, India" },
-              { icon: Phone, t: "Call", d: "+91 99999 99999\nMon–Sat · 10am – 8pm IST" },
-              { icon: Mail, t: "Email", d: "hello@aurelia.in\nconcierge@aurelia.in" },
-              { icon: MessageCircle, t: "WhatsApp", d: "The fastest way to reach us." },
+              { icon: MapPin, t: "Atelier & Store", d: settings.address },
+              { icon: Phone, t: "Phone / WhatsApp", d: `${settings.phone}\nMon–Sat, 11am to 7pm` },
+              { icon: Mail, t: "Email", d: settings.email },
             ].map((c) => (
               <div key={c.t} className="grid grid-cols-[auto_1fr] gap-5">
                 <div className="grid h-11 w-11 shrink-0 place-items-center border border-gold text-gold">

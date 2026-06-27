@@ -1,27 +1,36 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useLoaderData } from "@tanstack/react-router";
 import { ArrowRight, Award, ShieldCheck, Sparkles, Truck } from "lucide-react";
 import heroImg from "@/assets/hero.jpg";
 import aboutImg from "@/assets/about.jpg";
-import { categories, products } from "@/lib/products";
+import { getCategories, getProducts } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Aurelia — Fine Gold & Silver Jewellery" },
-      { name: "description", content: "Discover Aurelia's hand-crafted gold and silver jewellery — necklaces, chains, bracelets, coins, murtis, rakhis and gift collections." },
-      { property: "og:title", content: "Aurelia — Fine Gold & Silver Jewellery" },
-      { property: "og:description", content: "Modern luxury, timeless craft." },
+      { title: "Raani Chittroda — Gold & Silver Jewellery Manufacturer, Wholesaler & Retailer" },
+      { name: "description", content: "Premium Gold & Silver Jewellery for Every Occasion. We deal in Wholesale, Bulk Orders, Retail, Corporate Gifting, and Custom Manufacturing." },
+      { property: "og:title", content: "Raani Chittroda — Gold & Silver Jewellery" },
+      { property: "og:description", content: "Crafting Elegance in Gold & Silver." },
     ],
   }),
+  loader: async () => {
+    const [categories, products] = await Promise.all([
+      getCategories(),
+      getProducts(),
+    ]);
+    return { categories, products };
+  },
   component: Home,
 });
 
 function Home() {
-  const bestsellers = products.filter((p) => p.isBestSeller).slice(0, 4);
-  const newArrivals = products.filter((p) => p.isNew).slice(0, 4);
-  const featured = categories.slice(0, 4);
+  const { categories, products } = Route.useLoaderData();
+  const bestsellers = products.filter((p) => p.is_best_seller).slice(0, 4);
+  const newArrivals = products.filter((p) => p.is_new).slice(0, 4);
+  const featuredSlugs = ["silver-rakhis", "silver-murtis", "silver-necklaces", "silver-chains", "silver-gift-articles", "gold-jewellery"];
+  const featured = categories.filter((c) => featuredSlugs.includes(c.slug));
 
   return (
     <div>
@@ -35,12 +44,12 @@ function Home() {
         <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/60 to-transparent" />
         <div className="relative mx-auto flex min-h-[78vh] max-w-7xl flex-col justify-end px-6 py-16 sm:px-8 sm:py-24 md:min-h-[88vh] md:justify-center">
           <div className="max-w-xl">
-            <span className="eyebrow text-gold">The Autumn Edit · 2026</span>
+            <span className="eyebrow text-gold">RAANI CHITTRODA</span>
             <h1 className="mt-5 font-display text-5xl leading-[1.02] text-background sm:text-6xl md:text-7xl">
-              Quiet luxury, <em className="text-gold not-italic">cast in silver.</em>
+              Crafting Elegance in <em className="text-gold not-italic">Gold & Silver</em>
             </h1>
             <p className="mt-6 max-w-md text-sm leading-relaxed text-background/75 sm:text-base">
-              Heirloom-grade jewellery, hand-finished in our atelier. From rakhis to murtis, each Aurelia piece is hallmarked and meant to be passed on.
+              Premium Gold & Silver Jewellery for Every Occasion. Retail, Wholesale, Bulk Orders, and Custom Manufacturing.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Link to="/collections" className="btn-gold">
@@ -48,7 +57,7 @@ function Home() {
               </Link>
               <Link
                 to="/collections"
-                search={{ category: "gift-collection" }}
+                search={{ category: "silver-gift-articles" }}
                 className="inline-flex items-center justify-center gap-2 border border-background/60 px-8 py-3.5 text-[0.72rem] uppercase tracking-[0.28em] text-background transition hover:border-gold hover:text-gold"
               >
                 Gift Edit
@@ -58,9 +67,24 @@ function Home() {
         </div>
       </section>
 
-      {/* Featured Categories */}
-      <Section eyebrow="The House" title="Featured Categories" subtitle="Seven worlds of silver, curated by craft.">
-        <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-4">
+      {/* Bulk Order Banner */}
+      <section className="bg-gold py-16 sm:py-20 text-ink text-center px-6">
+        <h2 className="font-display text-4xl sm:text-5xl">Need Jewellery in Bulk?</h2>
+        <p className="mt-5 max-w-3xl mx-auto text-base sm:text-lg font-medium text-ink/80 leading-relaxed">
+          We supply Gold & Silver Jewellery to retailers, wholesalers, gift stores, corporate clients and businesses across India.
+        </p>
+        <div className="mt-10 flex flex-wrap justify-center gap-4">
+          <a href={buildWhatsAppUrl("Hello Raani Chittroda, I would like to request a wholesale quote.")} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center bg-ink text-gold px-8 py-4 text-sm uppercase tracking-widest font-semibold hover:bg-ink/90 transition">
+            Request Wholesale Quote
+          </a>
+          <a href={buildWhatsAppUrl("Hello Raani Chittroda, I have an inquiry.")} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center border-2 border-ink text-ink px-8 py-4 text-sm uppercase tracking-widest font-semibold hover:bg-ink hover:text-gold transition">
+            Contact on WhatsApp
+          </a>
+        </div>
+      </section>
+
+      <Section eyebrow="The House" title="Featured Collections" subtitle="Explore our premium collection of gold and silver.">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-6">
           {featured.map((c) => (
             <Link
               key={c.slug}
@@ -102,17 +126,19 @@ function Home() {
               <img src={aboutImg} alt="Aurelia atelier" loading="lazy" className="h-full w-full object-cover" />
             </div>
             <div>
-              <span className="eyebrow">Why Aurelia</span>
-              <h2 className="mt-4 font-display text-4xl sm:text-5xl">A house built on craft, not noise.</h2>
+              <span className="eyebrow">Why Raani Chittroda</span>
+              <h2 className="mt-4 font-display text-4xl sm:text-5xl">Trusted Manufacturer & Wholesaler.</h2>
               <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
-                For three generations, we have hand-finished sterling silver and 22k gold for India's most discerning families.
+                We are a trusted jewellery business dealing in premium Gold & Silver products for retailers, gift shops, religious stores, and individual customers.
               </p>
               <ul className="mt-10 grid gap-6 sm:grid-cols-2">
                 {[
-                  { icon: ShieldCheck, t: "BIS Hallmarked", d: "Certified purity, guaranteed for life." },
-                  { icon: Award, t: "Heirloom Craft", d: "Filigree by hand in our Jaipur atelier." },
-                  { icon: Truck, t: "Insured Shipping", d: "Pan-India, with discreet packaging." },
-                  { icon: Sparkles, t: "Lifetime Polish", d: "Complimentary care, always." },
+                  { icon: ShieldCheck, t: "Premium Quality Materials", d: "Finest gold and silver with guaranteed purity." },
+                  { icon: Award, t: "Trusted Jewellery Manufacturer", d: "Decades of manufacturing excellence." },
+                  { icon: Sparkles, t: "Wholesale Pricing", d: "Highly competitive rates for retailers." },
+                  { icon: Truck, t: "Bulk Orders Accepted", d: "Capacity for large scale production." },
+                  { icon: ArrowRight, t: "Fast Delivery", d: "Secure and quick PAN India dispatch." },
+                  { icon: ShieldCheck, t: "Excellent Customer Support", d: "Personal concierge service on WhatsApp." },
                 ].map((f) => (
                   <li key={f.t} className="flex gap-4">
                     <f.icon className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
@@ -128,13 +154,32 @@ function Home() {
         </div>
       </section>
 
+      {/* Business Statistics */}
+      <section className="border-t border-border bg-secondary py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-6 sm:px-8">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4 text-center">
+            {[
+              { val: "5000+", lbl: "Happy Customers" },
+              { val: "1000+", lbl: "Wholesale Clients" },
+              { val: "500+", lbl: "Jewellery Designs" },
+              { val: "10+", lbl: "Years of Experience" },
+            ].map((stat) => (
+              <div key={stat.lbl} className="flex flex-col gap-2">
+                <span className="font-display text-4xl sm:text-5xl text-gold">{stat.val}</span>
+                <span className="text-sm tracking-[0.2em] uppercase text-muted-foreground font-medium">{stat.lbl}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Reviews */}
-      <Section eyebrow="Patrons" title="Letters to the House" subtitle="A few words from those who carry Aurelia." dark>
+      <Section eyebrow="Patrons" title="Words of Trust" subtitle="A few words from our wholesale and retail clients." dark>
         <div className="grid gap-6 md:grid-cols-3">
           {[
-            { n: "Ananya Mehta", c: "Mumbai", q: "The filigree on my rakhi is impossibly fine. It felt like unwrapping an heirloom, not a gift." },
-            { n: "Rohan Iyer", c: "Bengaluru", q: "Bought the Lakshmi murti for my mother. The detail is staggering. The presentation matched the piece." },
-            { n: "Devika Rao", c: "New Delhi", q: "Their WhatsApp service is what won me. Personal, fast, and they remembered my last order." },
+            { n: "Ananya Mehta", c: "Mumbai", q: "The quality of wholesale silver murtis exceeded our expectations. Our customers love them." },
+            { n: "Rohan Iyer", c: "Bengaluru", q: "Best rates for bulk festival gifting. The delivery was fast and the items were securely packed." },
+            { n: "Devika Rao", c: "New Delhi", q: "Custom manufacturing was seamless. Raani Chittroda truly understands the nuances of fine jewellery." },
           ].map((r) => (
             <figure key={r.n} className="border border-border bg-background p-8">
               <div className="flex gap-1 text-gold">{"★★★★★"}</div>
@@ -150,7 +195,7 @@ function Home() {
       </Section>
 
       {/* Instagram */}
-      <Section eyebrow="@aurelia.house" title="On Instagram" subtitle="Behind the bench, on the wrist, at home.">
+      <Section eyebrow="@raanichittroda" title="Our Collections" subtitle="Explore our wide range of products.">
         <div className="grid grid-cols-3 gap-2 sm:gap-4 md:grid-cols-6">
           {categories.slice(0, 6).map((c) => (
             <a key={c.slug} href="#" className="group relative block aspect-square overflow-hidden bg-secondary">
@@ -163,18 +208,40 @@ function Home() {
         </div>
       </Section>
 
+      {/* FAQ */}
+      <Section eyebrow="Common Queries" title="Frequently Asked Questions" subtitle="Everything you need to know about ordering." dark>
+        <div className="mx-auto max-w-3xl divide-y divide-border border-t border-border">
+          {[
+            { q: "Do you accept wholesale orders?", a: "Yes, we are a leading manufacturer and wholesaler, catering to retailers and businesses with highly competitive wholesale pricing." },
+            { q: "Can I customize jewellery?", a: "Absolutely. We accept custom orders and bespoke commissions to meet your exact design and purity requirements." },
+            { q: "Do you ship across India?", a: "Yes, we provide secure and insured PAN India delivery for both retail and bulk orders." },
+            { q: "How do I place a bulk order?", a: "You can place an inquiry through our website checkout flow or contact us directly on WhatsApp to discuss your bulk requirements." },
+          ].map((faq) => (
+            <details key={faq.q} className="group py-6">
+              <summary className="flex cursor-pointer items-center justify-between font-display text-xl sm:text-2xl outline-none">
+                {faq.q}
+                <span className="ml-4 transition-transform duration-300 group-open:rotate-45 text-gold">+</span>
+              </summary>
+              <div className="mt-4 text-muted-foreground leading-relaxed">
+                {faq.a}
+              </div>
+            </details>
+          ))}
+        </div>
+      </Section>
+
       {/* Contact CTA */}
       <section className="bg-ink py-20 text-background sm:py-28">
         <div className="mx-auto max-w-3xl px-6 text-center sm:px-8">
-          <span className="eyebrow">A Personal Concierge</span>
+          <span className="eyebrow">Dedicated Support</span>
           <h2 className="mt-4 font-display text-4xl sm:text-5xl md:text-6xl">
-            Looking for something <em className="text-gold not-italic">just for you?</em>
+            Ready to place an <em className="text-gold not-italic">order?</em>
           </h2>
           <p className="mt-5 text-sm leading-relaxed text-background/70 sm:text-base">
-            From bespoke commissions to gifting advice, our team replies personally on WhatsApp — usually within the hour.
+            For retail, wholesale, or custom orders, connect directly with our team on WhatsApp.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
-            <a href={buildWhatsAppUrl("Hello Aurelia, I would like assistance with a piece.")} target="_blank" rel="noopener noreferrer" className="btn-outline-gold">
+            <a href={buildWhatsAppUrl("Hello Raani Chittroda, I would like to place an order.")} target="_blank" rel="noopener noreferrer" className="btn-outline-gold">
               Chat on WhatsApp
             </a>
             <Link to="/contact" className="inline-flex items-center justify-center gap-2 border border-background/60 px-8 py-3.5 text-[0.72rem] uppercase tracking-[0.28em] text-background transition hover:border-gold hover:text-gold">

@@ -80,11 +80,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Aurelia — Fine Gold & Silver Jewellery" },
-      { name: "description", content: "Aurelia crafts heirloom-grade gold and silver jewellery — rakhis, murtis, necklaces, chains, bracelets, coins and gift collections." },
-      { name: "author", content: "Aurelia" },
-      { property: "og:title", content: "Aurelia — Fine Gold & Silver Jewellery" },
-      { property: "og:description", content: "Modern luxury, timeless craft." },
+      { title: "Raani Chittroda — Gold & Silver Jewellery Manufacturer, Wholesaler & Retailer" },
+      { name: "description", content: "Raani Chittroda crafts heirloom-grade gold and silver jewellery — rakhis, murtis, necklaces, chains, bracelets, coins and gift collections." },
+      { name: "author", content: "Raani Chittroda" },
+      { property: "og:title", content: "Raani Chittroda — Gold & Silver Jewellery Manufacturer, Wholesaler & Retailer" },
+      { property: "og:description", content: "Premium Gold & Silver Jewellery for Every Occasion." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
@@ -119,18 +119,28 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+import { FloatingWhatsApp } from "../components/FloatingWhatsApp";
+
+import { useLocation } from "@tanstack/react-router";
+import { AdminAuthProvider } from "../lib/adminAuth";
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CartProvider>
-        <SiteHeader />
-        <main className="min-h-screen">
-          <Outlet />
-        </main>
-        <SiteFooter />
-      </CartProvider>
+      <AdminAuthProvider>
+        <CartProvider>
+          {!isAdminRoute && <SiteHeader />}
+          <main className={isAdminRoute ? "" : "min-h-screen"}>
+            <Outlet />
+          </main>
+          {!isAdminRoute && <SiteFooter />}
+          {!isAdminRoute && <FloatingWhatsApp />}
+        </CartProvider>
+      </AdminAuthProvider>
     </QueryClientProvider>
   );
 }

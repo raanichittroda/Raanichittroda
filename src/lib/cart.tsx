@@ -13,8 +13,6 @@ interface CartContextValue {
   remove: (productId: string) => void;
   setQty: (productId: string, qty: number) => void;
   clear: () => void;
-  detailed: Array<{ product: Product; quantity: number }>;
-  subtotal: number;
   isOpen: boolean;
   open: () => void;
   close: () => void;
@@ -68,18 +66,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clear = useCallback(() => setItems([]), []);
 
-  const detailed = useMemo(
-    () =>
-      items
-        .map((i) => {
-          const product = products.find((p) => p.id === i.productId);
-          return product ? { product, quantity: i.quantity } : null;
-        })
-        .filter(Boolean) as Array<{ product: Product; quantity: number }>,
-    [items],
-  );
-
-  const subtotal = useMemo(() => detailed.reduce((s, x) => s + x.product.price * x.quantity, 0), [detailed]);
   const count = useMemo(() => items.reduce((s, i) => s + i.quantity, 0), [items]);
 
   const value: CartContextValue = {
@@ -89,8 +75,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     remove,
     setQty,
     clear,
-    detailed,
-    subtotal,
     isOpen,
     open: () => setIsOpen(true),
     close: () => setIsOpen(false),

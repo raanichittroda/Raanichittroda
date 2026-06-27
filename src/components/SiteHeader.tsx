@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, ShoppingBag, X } from "lucide-react";
+import { Menu, ShoppingBag, X, Heart } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/hooks/useWishlist";
 import { CartDrawer } from "./CartDrawer";
 
 const nav = [
@@ -13,10 +14,14 @@ const nav = [
 
 export function SiteHeader() {
   const { count, open } = useCart();
+  const { items } = useWishlist();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <>
+      <div className="bg-gold px-4 py-2 text-center text-xs font-medium tracking-wide text-ink sm:text-sm">
+        Wholesale | Bulk Orders | Custom Jewellery | PAN India Delivery
+      </div>
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md">
         <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-5 py-4 sm:px-8">
           <button
@@ -29,8 +34,8 @@ export function SiteHeader() {
           </button>
 
           <Link to="/" className="flex items-center justify-self-center md:justify-self-start">
-            <span className="font-display text-2xl tracking-[0.18em] text-foreground sm:text-3xl">
-              AURELIA
+            <span className="font-display text-xl tracking-[0.18em] text-foreground sm:text-2xl font-semibold">
+              RAANI CHITTRODA
             </span>
           </Link>
 
@@ -47,19 +52,33 @@ export function SiteHeader() {
             ))}
           </nav>
 
-          <button
-            type="button"
-            onClick={open}
-            aria-label="Open cart"
-            className="relative -mr-2 p-2 text-foreground transition-colors hover:text-gold"
-          >
-            <ShoppingBag className="h-5 w-5" />
-            {count > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium text-ink">
-                {count}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              className="relative -mr-2 p-2 text-foreground transition-colors hover:text-gold"
+              onClick={() => alert("Wishlist items: " + items.length)}
+            >
+              <Heart className="h-5 w-5" />
+              {items.length > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium text-ink">
+                  {items.length}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={open}
+              aria-label="Open cart"
+              className="relative -mr-2 p-2 text-foreground transition-colors hover:text-gold"
+            >
+              <ShoppingBag className="h-5 w-5" />
+              {count > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium text-ink">
+                  {count}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -67,7 +86,7 @@ export function SiteHeader() {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 bg-background md:hidden">
           <div className="flex items-center justify-between px-5 py-4">
-            <span className="font-display text-2xl tracking-[0.18em]">AURELIA</span>
+            <span className="font-display text-xl tracking-[0.18em] font-semibold">RAANI CHITTRODA</span>
             <button onClick={() => setMobileOpen(false)} aria-label="Close menu" className="p-2">
               <X className="h-5 w-5" />
             </button>

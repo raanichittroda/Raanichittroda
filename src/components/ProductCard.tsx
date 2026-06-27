@@ -1,11 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Heart, Eye } from "lucide-react";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/hooks/useWishlist";
 import { formatINR, type Product } from "@/lib/products";
 import { buildWhatsAppUrl, productInquiryMessage } from "@/lib/whatsapp";
 
 export function ProductCard({ product }: { product: Product }) {
   const { add } = useCart();
+  const { toggle, has } = useWishlist();
+  const isWishlisted = has(product.id);
   const waUrl = buildWhatsAppUrl(productInquiryMessage({ name: product.name, id: product.id }));
 
   return (
@@ -23,11 +26,39 @@ export function ProductCard({ product }: { product: Product }) {
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
         </div>
-        {(product.isNew || product.isBestSeller) && (
-          <span className="absolute left-3 top-3 bg-background/95 px-2.5 py-1 text-[10px] tracking-[0.24em] uppercase text-ink">
-            {product.isNew ? "New" : "Bestseller"}
-          </span>
-        )}
+        <div className="absolute left-3 top-3 flex flex-col gap-1">
+          {(product.is_new || product.is_best_seller) && (
+            <span className="bg-background/95 px-2.5 py-1 text-[10px] tracking-[0.24em] uppercase text-ink inline-block w-fit">
+              {product.is_new ? "New" : "Bestseller"}
+            </span>
+          )}
+          {product.offer_badge && (
+            <span className="bg-gold/90 px-2.5 py-1 text-[10px] tracking-[0.24em] uppercase text-ink inline-block w-fit">
+              {product.offer_badge}
+            </span>
+          )}
+          {product.in_stock === false && (
+            <span className="bg-red-900/90 px-2.5 py-1 text-[10px] tracking-[0.24em] uppercase text-white inline-block w-fit">
+              Out of Stock
+            </span>
+          )}
+        </div>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            toggle(product.id);
+          }}
+          className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-background/80 text-foreground transition hover:bg-background hover:text-gold"
+          aria-label="Toggle Wishlist"
+        >
+          <Heart className={`h-4 w-4 ${isWishlisted ? "fill-gold text-gold" : ""}`} />
+        </button>
+        {/* Quick View overlay on hover */}
+        <div className="absolute inset-0 hidden place-items-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 sm:grid">
+           <span className="flex items-center gap-2 border border-background bg-background/95 px-4 py-2 text-xs uppercase tracking-widest text-foreground hover:bg-background hover:text-gold">
+             <Eye className="h-4 w-4" /> Quick View
+           </span>
+        </div>
       </Link>
 
       <div className="mt-4 flex flex-1 flex-col">
@@ -42,26 +73,37 @@ export function ProductCard({ product }: { product: Product }) {
               {product.id}
             </p>
           </div>
-          <p className="shrink-0 text-sm font-medium text-foreground">{formatINR(product.price)}</p>
+          <p className="shrink-0 text-sm font-medium text-foreground">{formatINR(product.retail_price)}</p>
         </div>
 
-        <div className="mt-4 flex items-stretch gap-2">
+        <div className="mt-4 flex flex-col gap-2">
           <button
             type="button"
             onClick={() => add(product.id, 1)}
-            className="flex flex-1 items-center justify-center gap-2 border border-ink bg-ink px-3 py-2.5 text-[10px] uppercase tracking-[0.24em] text-background transition hover:bg-gold hover:border-gold hover:text-ink"
+            disabled={product.in_stock === false}
+            className="flex w-full items-center justify-center gap-2 border border-ink bg-ink px-3 py-2.5 text-[10px] uppercase tracking-[0.24em] text-background transition hover:bg-gold hover:border-gold hover:text-ink disabled:opacity-50"
           >
-            <ShoppingBag className="h-3.5 w-3.5" /> Add
+            <ShoppingBag className="h-3.5 w-3.5" /> Add to Cart
           </button>
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Inquire on WhatsApp"
-            className="grid w-11 place-items-center border border-border text-foreground transition hover:border-gold hover:text-gold"
-          >
-            <WaIcon />
-          </a>
+          
+          <div className="flex items-stretch gap-2">
+            <Link
+              to="/product/$id"
+              params={{ id: product.id }}
+              className="flex flex-1 items-center justify-center border border-border px-3 py-2 text-[10px] uppercase tracking-[0.24em] text-muted-foreground transition hover:border-gold hover:text-gold"
+            >
+              View Details
+            </Link>
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Wholesale Inquiry on WhatsApp"
+              className="flex flex-1 items-center justify-center gap-1.5 border border-border px-3 py-2 text-[10px] uppercase tracking-[0.24em] text-foreground transition hover:border-gold hover:text-gold"
+            >
+              <WaIcon /> Wholesale Inquiry
+            </a>
+          </div>
         </div>
       </div>
     </article>
