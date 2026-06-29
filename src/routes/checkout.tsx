@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { z } from "zod";
 import { useCart } from "@/lib/cart";
 import { formatINR, getProduct, type Product } from "@/lib/products";
 import { buildWhatsAppUrl, checkoutMessage } from "@/lib/whatsapp";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -30,14 +31,15 @@ const schema = z.object({
 });
 
 function Checkout() {
-  const { items, count } = useCart();
+  const { items, count, clear } = useCart();
   const navigate = useNavigate();
   const [form, setForm] = useState({ 
     customerName: "", businessName: "", mobile: "", email: "", gstNumber: "", 
-    city: "", state: "", address: "", orderType: "Retail Order", expectedQuantity: "", note: "" 
+    city: "", state: "", address: "", orderType: "Retail Order" as const, expectedQuantity: "", note: "" 
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [productsData, setProductsData] = useState<Record<string, Product>>({});
 
   useEffect(() => {
@@ -65,9 +67,16 @@ function Checkout() {
     }).filter(Boolean) as { product: Product, quantity: number }[];
   }, [items, productsData]);
 
+  const getActivePrice = useCallback((product: Product) => {
+    if ((form.orderType === "Wholesale Order" || form.orderType === "Bulk Order") && product.wholesale_price !== null) {
+      return product.wholesale_price;
+    }
+    return product.retail_price;
+  }, [form.orderType]);
+
   const subtotal = useMemo(() => {
-    return detailed.reduce((sum, item) => sum + (item.product.retail_price * item.quantity), 0);
-  }, [detailed]);
+    return detailed.reduce((sum, item) => sum + (getActivePrice(item.product) * item.quantity), 0);
+  }, [detailed, getActivePrice]);
 
   if (submitted) {
     return (
@@ -95,8 +104,10 @@ function Checkout() {
     );
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isSubmitting) return;
+
     const result = schema.safeParse(form);
     if (!result.success) {
       const errs: Record<string, string> = {};
@@ -104,23 +115,80 @@ function Checkout() {
       setErrors(errs);
       return;
     }
-    const msg = checkoutMessage({
-      customerName: form.customerName,
-      businessName: form.businessName,
-      mobile: form.mobile,
-      email: form.email,
-      gstNumber: form.gstNumber,
-      city: form.city,
-      state: form.state,
-      address: form.address,
-      orderType: form.orderType,
-      expectedQuantity: form.expectedQuantity,
-      items: detailed.map((d) => ({ name: d.product.name, id: d.product.id, quantity: d.quantity, price: d.product.retail_price })),
-      totalAmount: formatINR(subtotal),
-      note: form.note,
-    });
-    window.open(buildWhatsAppUrl(msg), "_blank", "noopener,noreferrer");
-    setSubmitted(true);
+
+    setIsSubmitting(true);
+    try {
+      // 1. Insert order details into database
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          customer_name: form.customerName,
+          business_name: form.businessName || null,
+          mobile: form.mobile,
+          email: form.email,
+          gst_number: form.gstNumber || null,
+          city: form.city,
+          state: form.state,
+          address: form.address,
+          order_type: form.orderType,
+          expected_quantity: form.expectedQuantity || null,
+          total_amount: subtotal,
+          note: form.note || null,
+          status: 'New'
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // 2. Insert order items
+      const orderItems = detailed.map(item => ({
+        order_id: orderData.id,
+        product_id: item.product.id,
+        product_name: item.product.name,
+        quantity: item.quantity,
+        price: getActivePrice(item.product)
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      // 3. Clear cart
+      clear();
+
+      // 4. Build WhatsApp message and open
+      const msg = checkoutMessage({
+        customerName: form.customerName,
+        businessName: form.businessName,
+        mobile: form.mobile,
+        email: form.email,
+        gstNumber: form.gstNumber,
+        city: form.city,
+        state: form.state,
+        address: form.address,
+        orderType: form.orderType,
+        expectedQuantity: form.expectedQuantity,
+        items: detailed.map((d) => ({
+          name: d.product.name,
+          id: d.product.id,
+          quantity: d.quantity,
+          price: getActivePrice(d.product)
+        })),
+        totalAmount: formatINR(subtotal),
+        note: form.note,
+      });
+
+      window.open(buildWhatsAppUrl(msg), "_blank", "noopener,noreferrer");
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Checkout failed:", err);
+      alert("Failed to submit enquiry. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -249,8 +317,8 @@ function Checkout() {
               />
             </div>
           </div>
-          <button type="submit" className="btn-gold mt-8 w-full">
-            Send Enquiry
+          <button type="submit" disabled={isSubmitting} className="btn-gold mt-8 w-full flex items-center justify-center gap-2">
+            {isSubmitting ? "Processing..." : "Send Enquiry"}
           </button>
           <p className="mt-3 text-center text-xs text-muted-foreground">
             No payment is taken here. We confirm everything on WhatsApp first.
@@ -268,7 +336,7 @@ function Checkout() {
                   <p className="text-[10px] tracking-[0.24em] uppercase text-muted-foreground">{product.id}</p>
                   <p className="mt-1 text-xs text-muted-foreground">Qty {quantity}</p>
                 </div>
-                <p className="text-sm">{formatINR(product.price * quantity)}</p>
+                <p className="text-sm">{formatINR(getActivePrice(product) * quantity)}</p>
               </li>
             ))}
           </ul>
