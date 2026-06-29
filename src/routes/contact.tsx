@@ -28,7 +28,7 @@ function Contact() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [settings, setSettings] = useState({
-    address: "123 Heritage Row, Old City\nJaipur, Rajasthan 302001",
+    address: "50 Vasundra Nagar, Pal Balaji\nJodhpur, Rajasthan, India",
     phone: "+91 97850 90816",
     email: "hello@raanichittroda.in"
   });
@@ -43,8 +43,8 @@ function Contact() {
         supabase.from("settings").select("value").eq("key", "global_settings").single(),
         supabase.from("settings").select("value").eq("key", "homepage_cms").single()
       ]);
-      if (sData?.value) setSettings({ ...settings, ...(sData.value as any) });
-      if (cData?.value) setCms({ ...cms, ...(cData.value as any) });
+      if (sData?.value) setSettings(prev => ({ ...prev, ...(sData.value as any) }));
+      if (cData?.value) setCms(prev => ({ ...prev, ...(cData.value as any) }));
     }
     loadData();
   }, []);

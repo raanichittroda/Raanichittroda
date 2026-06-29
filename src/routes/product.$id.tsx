@@ -30,17 +30,25 @@ export const Route = createFileRoute("/product/$id")({
       related: related.filter(p => p.id !== product.id).slice(0, 4) 
     };
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.product.name} — Raani Chittroda` },
-          { name: "description", content: loaderData.product.description },
-          { property: "og:title", content: `${loaderData.product.name} — Raani Chittroda` },
-          { property: "og:description", content: loaderData.product.description },
-          { property: "og:image", content: loaderData.product.image },
-        ]
-      : [],
-  }),
+  head: ({ loaderData }) => {
+    if (!loaderData) return {};
+    const { product, category } = loaderData;
+    const title = `${product.name} | 925 Sterling Silver | Raani Chittroda`;
+    const desc = `Purchase ${product.name} online from Raani Chittroda. Certified 925 silver ${category?.name || "jewellery"} with premium craftsmanship. Purity: ${product.purity}. Weight: ${product.weight}. PAN India delivery.`;
+    
+    return {
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { property: "og:title", content: title },
+        { property: "og:description", content: desc },
+        { property: "og:image", content: product.image },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: desc },
+        { name: "twitter:image", content: product.image },
+      ],
+    };
+  },
   notFoundComponent: () => (
     <div className="grid min-h-[60vh] place-items-center px-6 text-center">
       <div>
@@ -86,15 +94,65 @@ function ProductPage() {
 
   return (
     <div className="bg-background">
+      {/* Product JSON-LD Schema */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": product.name,
+        "image": product.image,
+        "description": product.description,
+        "sku": product.id,
+        "offers": {
+          "@type": "Offer",
+          "url": `https://raanichittroda.netlify.app/product/${product.id}`,
+          "priceCurrency": "INR",
+          "price": product.retail_price,
+          "availability": product.in_stock !== false ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          "priceValidUntil": "2027-12-31"
+        }
+      })}} />
+
+      {/* Breadcrumb JSON-LD Schema */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://raanichittroda.netlify.app"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Collections",
+            "item": "https://raanichittroda.netlify.app/collections"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": category?.name || "Product Collection",
+            "item": `https://raanichittroda.netlify.app/collections/${product.category}`
+          },
+          {
+            "@type": "ListItem",
+            "position": 4,
+            "name": product.name,
+            "item": `https://raanichittroda.netlify.app/product/${product.id}`
+          }
+        ]
+      })}} />
+
       <div className="mx-auto max-w-7xl px-6 py-8 sm:px-8 sm:py-10">
-        <nav className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+        <nav className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground flex items-center gap-2">
           <Link to="/" className="hover:text-gold">Home</Link>
-          <span className="mx-2">/</span>
-          <Link to="/collections" search={{ category: product.category }} className="hover:text-gold">
+          <span>/</span>
+          <Link to="/collections/$categorySlug" params={{ categorySlug: product.category }} className="hover:text-gold">
             {category?.name}
           </Link>
-          <span className="mx-2">/</span>
-          <span className="text-foreground">{product.name}</span>
+          <span>/</span>
+          <span className="text-foreground truncate max-w-[200px]">{product.name}</span>
         </nav>
       </div>
 
@@ -124,7 +182,7 @@ function ProductPage() {
                 onClick={() => setActiveMedia(idx)}
                 className={`relative h-24 w-20 shrink-0 border-2 transition-colors ${activeMedia === idx ? 'border-gold' : 'border-transparent hover:border-border'}`}
               >
-                <img src={m.media_type === 'video' && m.thumbnail_url ? m.thumbnail_url : m.file_url} alt={`Gallery ${idx}`} className="h-full w-full object-cover" />
+                <img src={m.media_type === 'video' && m.thumbnail_url ? m.thumbnail_url : m.file_url} alt={`Gallery thumbnail ${idx}`} loading="lazy" className="h-full w-full object-cover" />
                 {m.media_type === 'video' && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                     <Play className="w-6 h-6 text-white opacity-80" />

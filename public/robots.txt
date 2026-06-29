@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://raanichittroda.netlify.app/sitemap.xml

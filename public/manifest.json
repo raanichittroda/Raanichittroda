@@ -1,0 +1,21 @@
+{
+  "short_name": "Raani Chittroda",
+  "name": "Raani Chittroda - Gold & 925 Sterling Silver Jewellery",
+  "description": "Premium handcrafted 925 silver rakhis and fine gold ornaments.",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "display": "standalone"
+}

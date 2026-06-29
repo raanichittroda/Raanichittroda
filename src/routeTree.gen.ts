@@ -12,9 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as BlogRouteImport } from './routes/blog'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as CollectionsCategorySlugRouteImport } from './routes/collections.$categorySlug'
+import { Route as BlogPostSlugRouteImport } from './routes/blog.$postSlug'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminAuthenticatedRouteImport } from './routes/admin._authenticated'
 import { Route as AdminAuthenticatedIndexRouteImport } from './routes/admin._authenticated.index'
@@ -45,6 +49,11 @@ const CheckoutRoute = CheckoutRouteImport.update({
   path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -55,10 +64,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BlogRoute,
+} as any)
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CollectionsCategorySlugRoute = CollectionsCategorySlugRouteImport.update({
+  id: '/$categorySlug',
+  path: '/$categorySlug',
+  getParentRoute: () => CollectionsRoute,
+} as any)
+const BlogPostSlugRoute = BlogPostSlugRouteImport.update({
+  id: '/$postSlug',
+  path: '/$postSlug',
+  getParentRoute: () => BlogRoute,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin/login',
@@ -144,12 +168,16 @@ const AdminAuthenticatedProductsIdEditRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/blog': typeof BlogRouteWithChildren
   '/checkout': typeof CheckoutRoute
-  '/collections': typeof CollectionsRoute
+  '/collections': typeof CollectionsRouteWithChildren
   '/contact': typeof ContactRoute
   '/admin': typeof AdminAuthenticatedRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
+  '/blog/$postSlug': typeof BlogPostSlugRoute
+  '/collections/$categorySlug': typeof CollectionsCategorySlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/blog/': typeof BlogIndexRoute
   '/admin/categories': typeof AdminAuthenticatedCategoriesRoute
   '/admin/homepage': typeof AdminAuthenticatedHomepageRoute
   '/admin/media': typeof AdminAuthenticatedMediaRoute
@@ -167,10 +195,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/checkout': typeof CheckoutRoute
-  '/collections': typeof CollectionsRoute
+  '/collections': typeof CollectionsRouteWithChildren
   '/contact': typeof ContactRoute
   '/admin/login': typeof AdminLoginRoute
+  '/blog/$postSlug': typeof BlogPostSlugRoute
+  '/collections/$categorySlug': typeof CollectionsCategorySlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/blog': typeof BlogIndexRoute
   '/admin/categories': typeof AdminAuthenticatedCategoriesRoute
   '/admin/homepage': typeof AdminAuthenticatedHomepageRoute
   '/admin/media': typeof AdminAuthenticatedMediaRoute
@@ -188,12 +219,16 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/blog': typeof BlogRouteWithChildren
   '/checkout': typeof CheckoutRoute
-  '/collections': typeof CollectionsRoute
+  '/collections': typeof CollectionsRouteWithChildren
   '/contact': typeof ContactRoute
   '/admin/_authenticated': typeof AdminAuthenticatedRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
+  '/blog/$postSlug': typeof BlogPostSlugRoute
+  '/collections/$categorySlug': typeof CollectionsCategorySlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/blog/': typeof BlogIndexRoute
   '/admin/_authenticated/categories': typeof AdminAuthenticatedCategoriesRoute
   '/admin/_authenticated/homepage': typeof AdminAuthenticatedHomepageRoute
   '/admin/_authenticated/media': typeof AdminAuthenticatedMediaRoute
@@ -212,12 +247,16 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/blog'
     | '/checkout'
     | '/collections'
     | '/contact'
     | '/admin'
     | '/admin/login'
+    | '/blog/$postSlug'
+    | '/collections/$categorySlug'
     | '/product/$id'
+    | '/blog/'
     | '/admin/categories'
     | '/admin/homepage'
     | '/admin/media'
@@ -238,7 +277,10 @@ export interface FileRouteTypes {
     | '/collections'
     | '/contact'
     | '/admin/login'
+    | '/blog/$postSlug'
+    | '/collections/$categorySlug'
     | '/product/$id'
+    | '/blog'
     | '/admin/categories'
     | '/admin/homepage'
     | '/admin/media'
@@ -255,12 +297,16 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/blog'
     | '/checkout'
     | '/collections'
     | '/contact'
     | '/admin/_authenticated'
     | '/admin/login'
+    | '/blog/$postSlug'
+    | '/collections/$categorySlug'
     | '/product/$id'
+    | '/blog/'
     | '/admin/_authenticated/categories'
     | '/admin/_authenticated/homepage'
     | '/admin/_authenticated/media'
@@ -278,8 +324,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  BlogRoute: typeof BlogRouteWithChildren
   CheckoutRoute: typeof CheckoutRoute
-  CollectionsRoute: typeof CollectionsRoute
+  CollectionsRoute: typeof CollectionsRouteWithChildren
   ContactRoute: typeof ContactRoute
   AdminAuthenticatedRoute: typeof AdminAuthenticatedRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
@@ -309,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -323,12 +377,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/': {
+      id: '/blog/'
+      path: '/'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof BlogRoute
+    }
     '/product/$id': {
       id: '/product/$id'
       path: '/product/$id'
       fullPath: '/product/$id'
       preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/collections/$categorySlug': {
+      id: '/collections/$categorySlug'
+      path: '/$categorySlug'
+      fullPath: '/collections/$categorySlug'
+      preLoaderRoute: typeof CollectionsCategorySlugRouteImport
+      parentRoute: typeof CollectionsRoute
+    }
+    '/blog/$postSlug': {
+      id: '/blog/$postSlug'
+      path: '/$postSlug'
+      fullPath: '/blog/$postSlug'
+      preLoaderRoute: typeof BlogPostSlugRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/admin/login': {
       id: '/admin/login'
@@ -431,6 +506,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface BlogRouteChildren {
+  BlogPostSlugRoute: typeof BlogPostSlugRoute
+  BlogIndexRoute: typeof BlogIndexRoute
+}
+
+const BlogRouteChildren: BlogRouteChildren = {
+  BlogPostSlugRoute: BlogPostSlugRoute,
+  BlogIndexRoute: BlogIndexRoute,
+}
+
+const BlogRouteWithChildren = BlogRoute._addFileChildren(BlogRouteChildren)
+
+interface CollectionsRouteChildren {
+  CollectionsCategorySlugRoute: typeof CollectionsCategorySlugRoute
+}
+
+const CollectionsRouteChildren: CollectionsRouteChildren = {
+  CollectionsCategorySlugRoute: CollectionsCategorySlugRoute,
+}
+
+const CollectionsRouteWithChildren = CollectionsRoute._addFileChildren(
+  CollectionsRouteChildren,
+)
+
 interface AdminAuthenticatedRouteChildren {
   AdminAuthenticatedCategoriesRoute: typeof AdminAuthenticatedCategoriesRoute
   AdminAuthenticatedHomepageRoute: typeof AdminAuthenticatedHomepageRoute
@@ -467,8 +566,9 @@ const AdminAuthenticatedRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  BlogRoute: BlogRouteWithChildren,
   CheckoutRoute: CheckoutRoute,
-  CollectionsRoute: CollectionsRoute,
+  CollectionsRoute: CollectionsRouteWithChildren,
   ContactRoute: ContactRoute,
   AdminAuthenticatedRoute: AdminAuthenticatedRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,

@@ -1,56 +1,52 @@
-import { createFileRoute, Link, useLoaderData } from "@tanstack/react-router";
+import { createFileRoute, Link, useLoaderData, notFound } from "@tanstack/react-router";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
-import { z } from "zod";
 import { getCategories, getProducts, type CategorySlug } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
 
-const search = z.object({
-  category: z
-    .enum([
-      "silver-rakhis",
-      "silver-murtis",
-      "silver-necklaces",
-      "silver-chains",
-      "silver-bracelets",
-      "silver-rings",
-      "silver-coins",
-      "silver-gift-articles",
-      "gold-jewellery",
-      "custom-orders",
-    ])
-    .optional(),
-});
-
-export const Route = createFileRoute("/collections")({
-  validateSearch: search,
-  head: () => ({
-    meta: [
-      { title: "Collections — Raani Chittroda" },
-      { name: "description", content: "Explore our finely crafted gold and silver jewellery collections." },
-    ],
-  }),
-  loader: async () => {
+export const Route = createFileRoute("/collections/$categorySlug")({
+  loader: async ({ params }) => {
     const [categories, products] = await Promise.all([getCategories(), getProducts()]);
-    return { categories, products };
+    const activeCategory = categories.find((c) => c.slug === params.categorySlug);
+    
+    if (!activeCategory) {
+      throw notFound();
+    }
+    
+    return { categories, products, activeCategory };
   },
-  component: Collections,
+  head: ({ loaderData }) => {
+    if (!loaderData) return {};
+    const { activeCategory } = loaderData;
+    
+    // SEO Titles based on requested keywords
+    let title = `${activeCategory.name} | Chittroda Jewellery | Raani Chittroda`;
+    let desc = `${activeCategory.blurb} Handcrafted 925 sterling silver ornaments from Raani Chittroda. Authenticity guaranteed.`;
+    
+    if (activeCategory.slug.includes("rakhi")) {
+      title = `Buy 925 Silver Rakhi Online | Handmade Silver Rakhis - Raani Chittroda`;
+      desc = `Explore our premium BIS hallmarked 925 Silver Rakhi collection. Handcrafted sterling silver rakhis, designer kadas, and custom Raksha Bandhan gifts with safe PAN India shipping.`;
+    }
+    
+    return {
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { property: "og:title", content: title },
+        { property: "og:description", content: desc },
+        { property: "og:image", content: activeCategory.image },
+      ],
+    };
+  },
+  component: CategoryLandingPage,
 });
 
-function Collections() {
-  const { categories, products } = Route.useLoaderData();
-  const searchParams = Route.useSearch();
-  const initialCategory = categories.find((c) => c.slug === searchParams.category)?.slug;
-  const [activeCategory, setActiveCategory] = useState<CategorySlug | "all">(
-    (initialCategory as CategorySlug) || "all",
-  );
+function CategoryLandingPage() {
+  const { categories, products, activeCategory } = Route.useLoaderData();
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredProducts = useMemo(() => {
-    let result = products;
-    if (activeCategory !== "all") {
-      result = result.filter((p) => p.category === activeCategory);
-    }
+    let result = products.filter((p) => p.category === activeCategory.slug);
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -58,10 +54,7 @@ function Collections() {
       );
     }
     return result;
-  }, [activeCategory, searchQuery, products]);
-
-  const activeCategoryData =
-    activeCategory !== "all" ? categories.find((c) => c.slug === activeCategory) : null;
+  }, [activeCategory.slug, searchQuery, products]);
 
   return (
     <div className="bg-background pt-16">
@@ -69,9 +62,9 @@ function Collections() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         "@context": "https://schema.org",
         "@type": "CollectionPage",
-        "name": activeCategoryData ? `${activeCategoryData.name} Collection` : "All Collections",
-        "description": activeCategoryData ? activeCategoryData.blurb : "Discover our entire catalog of masterfully crafted gold and silver jewellery.",
-        "url": `https://raanichittroda.netlify.app/collections${activeCategory !== 'all' ? `?category=${activeCategory}` : ''}`,
+        "name": `${activeCategory.name} Collection`,
+        "description": activeCategory.blurb,
+        "url": `https://raanichittroda.netlify.app/collections/${activeCategory.slug}`,
         "mainEntity": {
           "@type": "ItemList",
           "itemListElement": filteredProducts.slice(0, 12).map((p, idx) => ({
@@ -98,12 +91,12 @@ function Collections() {
             "name": "Collections",
             "item": "https://raanichittroda.netlify.app/collections"
           },
-          ...(activeCategoryData ? [{
+          {
             "@type": "ListItem",
             "position": 3,
-            "name": activeCategoryData.name,
-            "item": `https://raanichittroda.netlify.app/collections?category=${activeCategory}`
-          }] : [])
+            "name": activeCategory.name,
+            "item": `https://raanichittroda.netlify.app/collections/${activeCategory.slug}`
+          }
         ]
       })}} />
 
@@ -112,13 +105,9 @@ function Collections() {
         <nav className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground flex items-center gap-2">
           <Link to="/" className="hover:text-gold">Home</Link>
           <span>/</span>
-          <span className="text-foreground">Collections</span>
-          {activeCategoryData && (
-            <>
-              <span>/</span>
-              <span className="text-foreground">{activeCategoryData.name}</span>
-            </>
-          )}
+          <Link to="/collections" className="hover:text-gold">Collections</Link>
+          <span>/</span>
+          <span className="text-foreground">{activeCategory.name}</span>
         </nav>
       </div>
 
@@ -126,12 +115,10 @@ function Collections() {
       <section className="bg-secondary py-16 sm:py-24 mt-2">
         <div className="mx-auto max-w-7xl px-6 text-center sm:px-8">
           <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl text-foreground">
-            {activeCategoryData ? activeCategoryData.name : "All Collections"}
+            {activeCategory.name}
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-            {activeCategoryData
-              ? activeCategoryData.blurb
-              : "Discover our entire catalog of masterfully crafted pieces, suitable for retail and wholesale."}
+            {activeCategory.blurb}
           </p>
         </div>
       </section>
@@ -143,27 +130,26 @@ function Collections() {
           <div className="sticky top-24 space-y-8">
             <div>
               <h3 className="flex items-center gap-2 font-display text-lg border-b border-border pb-3 text-foreground">
-                <SlidersHorizontal className="h-4 w-4" /> Filters
+                <SlidersHorizontal className="h-4 w-4" /> Collections
               </h3>
               <div className="mt-5 space-y-2">
-                <button
-                  onClick={() => setActiveCategory("all")}
-                  className={`block w-full text-left text-sm transition-colors ${
-                    activeCategory === "all" ? "text-gold font-medium" : "text-muted-foreground hover:text-foreground"
-                  }`}
+                <Link
+                  to="/collections"
+                  className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   All Products
-                </button>
+                </Link>
                 {categories.map((c) => (
-                  <button
+                  <Link
                     key={c.slug}
-                    onClick={() => setActiveCategory(c.slug)}
-                    className={`block w-full text-left text-sm transition-colors ${
-                      activeCategory === c.slug ? "text-gold font-medium" : "text-muted-foreground hover:text-foreground"
+                    to="/collections/$categorySlug"
+                    params={{ categorySlug: c.slug }}
+                    className={`block text-sm transition-colors ${
+                      activeCategory.slug === c.slug ? "text-gold font-medium" : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {c.name}
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -181,7 +167,7 @@ function Collections() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder="Search category products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full sm:w-64 rounded-none border border-border bg-transparent py-2 pl-9 pr-3 text-sm text-foreground focus:border-gold focus:outline-none focus:ring-0"
@@ -198,17 +184,14 @@ function Collections() {
             </div>
           ) : (
             <div className="py-20 text-center">
-              <h3 className="font-display text-xl text-foreground">No pieces found.</h3>
-              <p className="mt-2 text-muted-foreground">Try adjusting your filters or search term.</p>
-              <button
-                onClick={() => {
-                  setActiveCategory("all");
-                  setSearchQuery("");
-                }}
-                className="mt-6 text-sm uppercase tracking-widest text-gold hover:text-gold/80"
+              <h3 className="font-display text-xl text-foreground">No pieces found in this collection.</h3>
+              <p className="mt-2 text-muted-foreground">Try searching or view another collection.</p>
+              <Link
+                to="/collections"
+                className="mt-6 inline-block text-sm uppercase tracking-widest text-gold hover:text-gold/80"
               >
-                Clear all filters
-              </button>
+                View all collections
+              </Link>
             </div>
           )}
         </div>
