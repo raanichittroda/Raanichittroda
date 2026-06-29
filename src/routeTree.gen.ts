@@ -20,6 +20,7 @@ import { Route as AdminAuthenticatedRouteImport } from './routes/admin._authenti
 import { Route as AdminAuthenticatedIndexRouteImport } from './routes/admin._authenticated.index'
 import { Route as AdminAuthenticatedWholesaleRouteImport } from './routes/admin._authenticated.wholesale'
 import { Route as AdminAuthenticatedSettingsRouteImport } from './routes/admin._authenticated.settings'
+import { Route as AdminAuthenticatedReviewsRouteImport } from './routes/admin._authenticated.reviews'
 import { Route as AdminAuthenticatedProfileRouteImport } from './routes/admin._authenticated.profile'
 import { Route as AdminAuthenticatedOrdersRouteImport } from './routes/admin._authenticated.orders'
 import { Route as AdminAuthenticatedMediaRouteImport } from './routes/admin._authenticated.media'
@@ -86,6 +87,12 @@ const AdminAuthenticatedSettingsRoute =
     path: '/settings',
     getParentRoute: () => AdminAuthenticatedRoute,
   } as any)
+const AdminAuthenticatedReviewsRoute =
+  AdminAuthenticatedReviewsRouteImport.update({
+    id: '/reviews',
+    path: '/reviews',
+    getParentRoute: () => AdminAuthenticatedRoute,
+  } as any)
 const AdminAuthenticatedProfileRoute =
   AdminAuthenticatedProfileRouteImport.update({
     id: '/profile',
@@ -148,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/admin/media': typeof AdminAuthenticatedMediaRoute
   '/admin/orders': typeof AdminAuthenticatedOrdersRoute
   '/admin/profile': typeof AdminAuthenticatedProfileRoute
+  '/admin/reviews': typeof AdminAuthenticatedReviewsRoute
   '/admin/settings': typeof AdminAuthenticatedSettingsRoute
   '/admin/wholesale': typeof AdminAuthenticatedWholesaleRoute
   '/admin/': typeof AdminAuthenticatedIndexRoute
@@ -168,6 +176,7 @@ export interface FileRoutesByTo {
   '/admin/media': typeof AdminAuthenticatedMediaRoute
   '/admin/orders': typeof AdminAuthenticatedOrdersRoute
   '/admin/profile': typeof AdminAuthenticatedProfileRoute
+  '/admin/reviews': typeof AdminAuthenticatedReviewsRoute
   '/admin/settings': typeof AdminAuthenticatedSettingsRoute
   '/admin/wholesale': typeof AdminAuthenticatedWholesaleRoute
   '/admin': typeof AdminAuthenticatedIndexRoute
@@ -190,6 +199,7 @@ export interface FileRoutesById {
   '/admin/_authenticated/media': typeof AdminAuthenticatedMediaRoute
   '/admin/_authenticated/orders': typeof AdminAuthenticatedOrdersRoute
   '/admin/_authenticated/profile': typeof AdminAuthenticatedProfileRoute
+  '/admin/_authenticated/reviews': typeof AdminAuthenticatedReviewsRoute
   '/admin/_authenticated/settings': typeof AdminAuthenticatedSettingsRoute
   '/admin/_authenticated/wholesale': typeof AdminAuthenticatedWholesaleRoute
   '/admin/_authenticated/': typeof AdminAuthenticatedIndexRoute
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/admin/media'
     | '/admin/orders'
     | '/admin/profile'
+    | '/admin/reviews'
     | '/admin/settings'
     | '/admin/wholesale'
     | '/admin/'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/admin/media'
     | '/admin/orders'
     | '/admin/profile'
+    | '/admin/reviews'
     | '/admin/settings'
     | '/admin/wholesale'
     | '/admin'
@@ -254,6 +266,7 @@ export interface FileRouteTypes {
     | '/admin/_authenticated/media'
     | '/admin/_authenticated/orders'
     | '/admin/_authenticated/profile'
+    | '/admin/_authenticated/reviews'
     | '/admin/_authenticated/settings'
     | '/admin/_authenticated/wholesale'
     | '/admin/_authenticated/'
@@ -352,6 +365,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuthenticatedSettingsRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
+    '/admin/_authenticated/reviews': {
+      id: '/admin/_authenticated/reviews'
+      path: '/reviews'
+      fullPath: '/admin/reviews'
+      preLoaderRoute: typeof AdminAuthenticatedReviewsRouteImport
+      parentRoute: typeof AdminAuthenticatedRoute
+    }
     '/admin/_authenticated/profile': {
       id: '/admin/_authenticated/profile'
       path: '/profile'
@@ -417,6 +437,7 @@ interface AdminAuthenticatedRouteChildren {
   AdminAuthenticatedMediaRoute: typeof AdminAuthenticatedMediaRoute
   AdminAuthenticatedOrdersRoute: typeof AdminAuthenticatedOrdersRoute
   AdminAuthenticatedProfileRoute: typeof AdminAuthenticatedProfileRoute
+  AdminAuthenticatedReviewsRoute: typeof AdminAuthenticatedReviewsRoute
   AdminAuthenticatedSettingsRoute: typeof AdminAuthenticatedSettingsRoute
   AdminAuthenticatedWholesaleRoute: typeof AdminAuthenticatedWholesaleRoute
   AdminAuthenticatedIndexRoute: typeof AdminAuthenticatedIndexRoute
@@ -431,6 +452,7 @@ const AdminAuthenticatedRouteChildren: AdminAuthenticatedRouteChildren = {
   AdminAuthenticatedMediaRoute: AdminAuthenticatedMediaRoute,
   AdminAuthenticatedOrdersRoute: AdminAuthenticatedOrdersRoute,
   AdminAuthenticatedProfileRoute: AdminAuthenticatedProfileRoute,
+  AdminAuthenticatedReviewsRoute: AdminAuthenticatedReviewsRoute,
   AdminAuthenticatedSettingsRoute: AdminAuthenticatedSettingsRoute,
   AdminAuthenticatedWholesaleRoute: AdminAuthenticatedWholesaleRoute,
   AdminAuthenticatedIndexRoute: AdminAuthenticatedIndexRoute,

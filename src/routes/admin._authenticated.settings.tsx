@@ -15,6 +15,9 @@ function SettingsCMS() {
     phone: "",
     whatsapp: "",
     address: "",
+    email: "",
+    instagram: "",
+    facebook: "",
     seoTitle: "",
     seoDescription: "",
   });
@@ -27,7 +30,7 @@ function SettingsCMS() {
     setLoading(true);
     const { data, error } = await supabase.from("settings").select("value").eq("key", "global_settings").single();
     if (data && data.value) {
-      setSettings(data.value as any);
+      setSettings(prev => ({ ...prev, ...(data.value as any) }));
     } else if (error && error.code !== "PGRST116") { // Ignore no rows error
       console.error("Failed to load settings", error);
     }
@@ -78,6 +81,18 @@ function SettingsCMS() {
             <div>
               <label className="block text-sm font-medium text-gray-700">WhatsApp Number</label>
               <input type="text" value={settings.whatsapp || ""} onChange={(e) => setSettings({ ...settings, whatsapp: e.target.value })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gray-900 focus:border-gray-900 sm:text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email Address</label>
+              <input type="text" value={settings.email || ""} onChange={(e) => setSettings({ ...settings, email: e.target.value })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gray-900 focus:border-gray-900 sm:text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Instagram Link</label>
+              <input type="text" value={settings.instagram || ""} onChange={(e) => setSettings({ ...settings, instagram: e.target.value })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gray-900 focus:border-gray-900 sm:text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Facebook Link</label>
+              <input type="text" value={settings.facebook || ""} onChange={(e) => setSettings({ ...settings, facebook: e.target.value })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gray-900 focus:border-gray-900 sm:text-sm" />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700">Store Address</label>

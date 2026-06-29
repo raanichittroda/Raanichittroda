@@ -1,10 +1,12 @@
-import { createFileRoute, Link, useLoaderData } from "@tanstack/react-router";
-import { ArrowRight, Award, ShieldCheck, Sparkles, Truck } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight, Award, ShieldCheck, Sparkles, Truck, Star } from "lucide-react";
+import { useState, useEffect } from "react";
 import heroImg from "@/assets/hero.jpg";
 import aboutImg from "@/assets/about.jpg";
 import { getCategories, getProducts } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -16,17 +18,57 @@ export const Route = createFileRoute("/")({
     ],
   }),
   loader: async () => {
-    const [categories, products] = await Promise.all([
+    const [categories, products, { data: cmsData }, { data: reviewsData }] = await Promise.all([
       getCategories(),
       getProducts(),
+      supabase.from("settings").select("value").eq("key", "homepage_cms").single(),
+      supabase.from("settings").select("value").eq("key", "customer_reviews").single(),
     ]);
-    return { categories, products };
+
+    const cms = (cmsData?.value || {}) as any;
+    const reviews = (reviewsData?.value || [
+      { name: "Ananya Mehta", city: "Mumbai", comment: "The quality of wholesale silver murtis exceeded our expectations. Our customers love them.", rating: 5 },
+      { name: "Rohan Iyer", city: "Bengaluru", comment: "Best rates for bulk festival gifting. The delivery was fast and the items were securely packed.", rating: 5 },
+      { name: "Devika Rao", city: "New Delhi", comment: "Custom manufacturing was seamless. Raani Chittroda truly understands the nuances of fine jewellery.", rating: 5 },
+    ]) as any[];
+
+    return { categories, products, cms, reviews };
   },
   component: Home,
 });
 
+function HeroSlider({ images, fallbackImage }: { images?: string[], fallbackImage: string }) {
+  const slideImages = images && images.filter(img => !!img).length > 0 
+    ? images.filter(img => !!img) 
+    : [fallbackImage];
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (slideImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % slideImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [slideImages]);
+
+  return (
+    <div className="absolute inset-0 h-full w-full overflow-hidden">
+      {slideImages.map((src, idx) => (
+        <img
+          key={src + idx}
+          src={src}
+          alt={`Hero slide ${idx + 1}`}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
+            idx === currentIndex ? "opacity-70" : "opacity-0"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
 function Home() {
-  const { categories, products } = Route.useLoaderData();
+  const { categories, products, cms, reviews } = Route.useLoaderData();
   const bestsellers = products.filter((p) => p.is_best_seller).slice(0, 4);
   const newArrivals = products.filter((p) => p.is_new).slice(0, 4);
   const featuredSlugs = ["silver-rakhis", "silver-murtis", "silver-necklaces", "silver-chains", "silver-gift-articles", "gold-jewellery"];
@@ -36,17 +78,27 @@ function Home() {
     <div>
       {/* Hero */}
       <section className="relative isolate overflow-hidden bg-ink text-background">
-        <img
-          src={heroImg}
-          alt="Aurelia signature necklace"
-          className="absolute inset-0 h-full w-full object-cover opacity-70"
-        />
+        <HeroSlider images={cms.heroImages} fallbackImage={heroImg} />
         <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/60 to-transparent" />
         <div className="relative mx-auto flex min-h-[78vh] max-w-7xl flex-col justify-end px-6 py-16 sm:px-8 sm:py-24 md:min-h-[88vh] md:justify-center">
           <div className="max-w-xl">
             <span className="eyebrow text-gold">RAANI CHITTRODA</span>
             <h1 className="mt-5 font-display text-5xl leading-[1.02] text-background sm:text-6xl md:text-7xl">
-              Crafting Elegance in <em className="text-gold not-italic">Gold & Silver</em>
+              {cms.heroHeading ? (
+                cms.heroHeading.includes("Gold & Silver") ? (
+                  <>
+                    {cms.heroHeading.split("Gold & Silver")[0]}
+                    <em className="text-gold not-italic">Gold & Silver</em>
+                    {cms.heroHeading.split("Gold & Silver")[1]}
+                  </>
+                ) : (
+                  cms.heroHeading
+                )
+              ) : (
+                <>
+                  Crafting Elegance in <em className="text-gold not-italic">Gold & Silver</em>
+                </>
+              )}
             </h1>
             <p className="mt-6 max-w-md text-sm leading-relaxed text-background/75 sm:text-base">
               Premium Gold & Silver Jewellery for Every Occasion. Retail, Wholesale, Bulk Orders, and Custom Manufacturing.
@@ -176,18 +228,18 @@ function Home() {
       {/* Reviews */}
       <Section eyebrow="Patrons" title="Words of Trust" subtitle="A few words from our wholesale and retail clients." dark>
         <div className="grid gap-6 md:grid-cols-3">
-          {[
-            { n: "Ananya Mehta", c: "Mumbai", q: "The quality of wholesale silver murtis exceeded our expectations. Our customers love them." },
-            { n: "Rohan Iyer", c: "Bengaluru", q: "Best rates for bulk festival gifting. The delivery was fast and the items were securely packed." },
-            { n: "Devika Rao", c: "New Delhi", q: "Custom manufacturing was seamless. Raani Chittroda truly understands the nuances of fine jewellery." },
-          ].map((r) => (
-            <figure key={r.n} className="border border-border bg-background p-8">
-              <div className="flex gap-1 text-gold">{"★★★★★"}</div>
+          {reviews.map((r: any) => (
+            <figure key={r.id || r.name} className="border border-border bg-background p-8">
+              <div className="flex gap-0.5 text-gold">
+                {Array.from({ length: r.rating || 5 }).map((_, idx) => (
+                  <Star key={idx} className="w-4 h-4 fill-current" />
+                ))}
+              </div>
               <blockquote className="mt-5 font-display text-xl leading-snug text-foreground">
-                “{r.q}”
+                “{r.comment || r.q}”
               </blockquote>
               <figcaption className="mt-6 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
-                {r.n} · {r.c}
+                {r.name || r.n} · {r.city || r.c}
               </figcaption>
             </figure>
           ))}

@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAdminAuth } from "@/lib/adminAuth";
-import { LayoutDashboard, ShoppingBag, FolderTree, ClipboardList, Settings, Image as ImageIcon, LayoutTemplate, LogOut, User } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, FolderTree, ClipboardList, Settings, Image as ImageIcon, LayoutTemplate, LogOut, User, Star } from "lucide-react";
 
 export const Route = createFileRoute("/admin/_authenticated")({
   component: AdminLayout,
@@ -14,6 +14,7 @@ const navItems = [
   { label: "Wholesale Enquiries", href: "/admin/wholesale", icon: ClipboardList },
   { label: "Retail Orders", href: "/admin/orders", icon: ClipboardList },
   { label: "Customers", href: "/admin/customers", icon: User },
+  { label: "Reviews", href: "/admin/reviews", icon: Star },
   { label: "Homepage CMS", href: "/admin/homepage", icon: LayoutTemplate },
   { label: "Media Library", href: "/admin/media", icon: ImageIcon },
   { label: "Settings", href: "/admin/settings", icon: Settings },

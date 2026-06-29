@@ -8,7 +8,9 @@ export function SiteFooter() {
     storeName: "RAANI CHITTRODA",
     phone: "+91 97850 90816",
     address: "123 Heritage Row, Old City, Jaipur, Rajasthan 302001",
-    email: "hello@raanichittroda.in"
+    email: "hello@raanichittroda.in",
+    instagram: "",
+    facebook: "",
   });
 
   const [cms, setCms] = useState({
@@ -21,8 +23,8 @@ export function SiteFooter() {
         supabase.from("settings").select("value").eq("key", "global_settings").single(),
         supabase.from("settings").select("value").eq("key", "homepage_cms").single()
       ]);
-      if (sData?.value) setSettings({ ...settings, ...(sData.value as any) });
-      if (cData?.value) setCms({ ...cms, ...(cData.value as any) });
+      if (sData?.value) setSettings(prev => ({ ...prev, ...(sData.value as any) }));
+      if (cData?.value) setCms(prev => ({ ...prev, ...(cData.value as any) }));
     }
     loadData();
   }, []);
@@ -61,15 +63,22 @@ export function SiteFooter() {
           <ul className="mt-5 space-y-3 text-sm text-background/75">
             <li className="flex items-start gap-2"><MapPin className="h-4 w-4 text-gold shrink-0 mt-0.5" /> <span className="leading-tight">{settings.address}</span></li>
             <li className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-gold shrink-0" /> {settings.phone}</li>
-            <li className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-gold shrink-0" /> {settings.email}</li>
+            <li className="flex items-center gap-2">
+              <Mail className="h-3.5 w-3.5 text-gold shrink-0" />
+              <a href={`mailto:${settings.email}`} className="hover:text-gold">{settings.email}</a>
+            </li>
           </ul>
           <div className="mt-6 flex gap-3">
-            <a href="#" aria-label="Instagram" className="grid h-9 w-9 place-items-center border border-background/20 text-background/80 transition hover:border-gold hover:text-gold">
-              <Instagram className="h-4 w-4" />
-            </a>
-            <a href="#" aria-label="Facebook" className="grid h-9 w-9 place-items-center border border-background/20 text-background/80 transition hover:border-gold hover:text-gold">
-              <Facebook className="h-4 w-4" />
-            </a>
+            {settings.instagram && (
+              <a href={settings.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="grid h-9 w-9 place-items-center border border-background/20 text-background/80 transition hover:border-gold hover:text-gold">
+                <Instagram className="h-4 w-4" />
+              </a>
+            )}
+            {settings.facebook && (
+              <a href={settings.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="grid h-9 w-9 place-items-center border border-background/20 text-background/80 transition hover:border-gold hover:text-gold">
+                <Facebook className="h-4 w-4" />
+              </a>
+            )}
           </div>
         </div>
       </div>

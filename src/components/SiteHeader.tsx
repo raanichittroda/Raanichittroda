@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { Menu, ShoppingBag, X, Heart } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { CartDrawer } from "./CartDrawer";
+import { supabase } from "@/lib/supabase";
 
 const nav = [
   { to: "/", label: "Home" },
@@ -16,11 +17,22 @@ export function SiteHeader() {
   const { count, open } = useCart();
   const { items } = useWishlist();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [announcement, setAnnouncement] = useState("Wholesale | Bulk Orders | Custom Jewellery | PAN India Delivery");
+
+  useEffect(() => {
+    async function loadCMS() {
+      const { data } = await supabase.from("settings").select("value").eq("key", "homepage_cms").single();
+      if (data?.value && (data.value as any).announcement) {
+        setAnnouncement((data.value as any).announcement);
+      }
+    }
+    loadCMS();
+  }, []);
 
   return (
     <>
       <div className="bg-gold px-4 py-2 text-center text-xs font-medium tracking-wide text-ink sm:text-sm">
-        Wholesale | Bulk Orders | Custom Jewellery | PAN India Delivery
+        {announcement}
       </div>
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md">
         <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-5 py-4 sm:px-8">
