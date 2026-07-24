@@ -1,12 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { Search, Clock, CheckCircle, XCircle } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import { formatINR } from "@/lib/products";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/admin/_authenticated/wholesale")({
-  component: WholesaleEnquiries,
+  component: WholesaleRedirect,
 });
+
+function WholesaleRedirect() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    navigate({ to: "/admin/customers", replace: true });
+  }, [navigate]);
+
+  return <div className="p-8 text-center text-gray-500">Redirecting to Customer CRM...</div>;
+}
 
 const statuses = ["New", "Contacted", "Quotation Sent", "Confirmed", "Completed", "Cancelled"];
 

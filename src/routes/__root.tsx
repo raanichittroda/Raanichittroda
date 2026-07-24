@@ -7,13 +7,14 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CartProvider } from "../lib/cart";
 import { SiteHeader } from "../components/SiteHeader";
 import { SiteFooter } from "../components/SiteFooter";
+import { supabase } from "../lib/supabase";
 
 function NotFoundComponent() {
   return (
@@ -113,11 +114,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const canonicalUrl = `https://raanichittroda.netlify.app${router.state.location.pathname === "/" ? "" : router.state.location.pathname}`;
+  const [faviconUrl, setFaviconUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadFavicon() {
+      const { data } = await supabase.from("settings").select("value").eq("key", "global_settings").single();
+      if (data?.value && (data.value as any).faviconUrl) {
+        setFaviconUrl((data.value as any).faviconUrl);
+      }
+    }
+    loadFavicon();
+  }, []);
 
   return (
     <html lang="en">
       <head>
         <HeadContent />
+        {faviconUrl && <link rel="icon" href={faviconUrl} />}
         <link rel="canonical" href={canonicalUrl} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
           "@context": "https://schema.org",

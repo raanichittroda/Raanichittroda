@@ -11,6 +11,7 @@ export function SiteFooter() {
     email: "hello@raanichittroda.in",
     instagram: "https://www.instagram.com/raanichittroda",
     facebook: "https://www.facebook.com/raanichittroda",
+    logoUrl: "",
   });
 
   const [cms, setCms] = useState({
@@ -33,7 +34,11 @@ export function SiteFooter() {
     <footer className="border-t border-border bg-ink text-background">
       <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 sm:px-8 md:grid-cols-4">
         <div className="md:col-span-1">
-          <div className="font-display text-2xl tracking-[0.18em] font-semibold text-gold uppercase">{settings.storeName}</div>
+          {settings.logoUrl ? (
+            <img src={settings.logoUrl} alt={settings.storeName} className="h-10 sm:h-12 max-w-[200px] object-contain mb-4" />
+          ) : (
+            <div className="font-display text-2xl tracking-[0.18em] font-semibold text-gold uppercase">{settings.storeName}</div>
+          )}
           <p className="mt-4 text-xs leading-relaxed text-background/70">
             {cms.aboutUsText}
           </p>

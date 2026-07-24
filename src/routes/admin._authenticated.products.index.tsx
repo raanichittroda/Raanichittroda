@@ -26,8 +26,8 @@ function AdminProducts() {
     setLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete product "${name}" (ID: ${id})? This will permanently remove it from your catalog.`)) return;
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) {
       alert("Failed to delete product: " + error.message);
@@ -46,8 +46,8 @@ function AdminProducts() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Products</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage your jewelry catalog, pricing, and inventory.</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Products Catalog</h1>
+          <p className="mt-1 text-sm text-gray-500">Manage your jewelry catalog, edit details, pricing, media, and inventory status.</p>
         </div>
         <Link
           to="/admin/products/new"
@@ -79,7 +79,7 @@ function AdminProducts() {
             <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase tracking-wider text-[11px] font-semibold">
               <tr>
                 <th className="px-6 py-4">Product</th>
-                <th className="px-6 py-4">SKU</th>
+                <th className="px-6 py-4">SKU / ID</th>
                 <th className="px-6 py-4">Category</th>
                 <th className="px-6 py-4">Retail Price</th>
                 <th className="px-6 py-4">Wholesale Price</th>
@@ -103,7 +103,7 @@ function AdminProducts() {
                   <tr key={product.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded bg-gray-100">
+                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded bg-gray-100 border border-gray-200">
                           <img
                             src={product.image}
                             alt={product.name}
@@ -114,7 +114,7 @@ function AdminProducts() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-500 font-mono text-xs">{product.id}</td>
-                    <td className="px-6 py-4 text-gray-500 capitalize">{product.category.replace("-", " ")}</td>
+                    <td className="px-6 py-4 text-gray-500 capitalize">{product.category?.replace(/-/g, " ")}</td>
                     <td className="px-6 py-4 text-gray-900 font-medium">₹{product.retail_price}</td>
                     <td className="px-6 py-4 text-gray-900 font-medium">{product.wholesale_price ? `₹${product.wholesale_price}` : "-"}</td>
                     <td className="px-6 py-4">
@@ -130,11 +130,20 @@ function AdminProducts() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Link to={`/admin/products/${product.id}/edit`} className="p-1 text-gray-400 hover:text-blue-600 transition-colors">
-                          <Edit className="h-4 w-4" />
+                        <Link 
+                          to="/admin/products/$id/edit" 
+                          params={{ id: product.id }} 
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                          title="Edit Product Details & Media"
+                        >
+                          <Edit className="h-3.5 w-3.5" /> Edit
                         </Link>
-                        <button onClick={() => handleDelete(product.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors">
-                          <Trash2 className="h-4 w-4" />
+                        <button 
+                          onClick={() => handleDelete(product.id, product.name)} 
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+                          title="Delete Product"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Delete
                         </button>
                       </div>
                     </td>

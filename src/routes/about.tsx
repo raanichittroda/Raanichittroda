@@ -20,11 +20,19 @@ function About() {
   const [cms, setCms] = useState({
     aboutUsText: "Raani Chittroda is a trusted jewellery business dealing in premium Gold & Silver products for retailers, gift shops, religious stores and individual customers."
   });
+  const [aboutImages, setAboutImages] = useState<any[]>([]);
 
   useEffect(() => {
     async function loadData() {
-      const { data } = await supabase.from("settings").select("value").eq("key", "homepage_cms").single();
-      if (data?.value) setCms({ ...cms, ...(data.value as any) });
+      const [{ data: homeData }, { data: aboutData }] = await Promise.all([
+        supabase.from("settings").select("value").eq("key", "homepage_cms").single(),
+        supabase.from("settings").select("value").eq("key", "about_cms").single(),
+      ]);
+
+      if (homeData?.value) setCms(prev => ({ ...prev, ...(homeData.value as any) }));
+      if (aboutData?.value && (aboutData.value as any).images) {
+        setAboutImages((aboutData.value as any).images);
+      }
     }
     loadData();
   }, []);
@@ -46,7 +54,7 @@ function About() {
       </section>
 
       <section className="py-20 sm:py-28">
-        <div className="mx-auto grid max-w-6xl gap-12 px-6 sm:px-8 md:grid-cols-2 md:gap-16">
+        <div className="mx-auto grid max-w-6xl gap-12 px-6 sm:px-8 md:grid-cols-2 md:gap-16 items-center">
           <div>
             <span className="eyebrow">The Beginning</span>
             <h2 className="mt-3 font-display text-4xl sm:text-5xl">Our Heritage.</h2>
@@ -57,10 +65,44 @@ function About() {
               Whether you are an individual customer looking for a premium piece or a retailer seeking wholesale supplies, we promise fast dispatch, trusted quality, and dedicated service.
             </p>
           </div>
-          <div className="aspect-[4/5] overflow-hidden">
-            <img src={aboutImg} alt="Aurelia atelier" loading="lazy" className="h-full w-full object-cover" />
+          <div className="aspect-[4/5] overflow-hidden rounded-lg shadow-xl border border-border">
+            <img 
+              src={aboutImages.length > 0 ? aboutImages[0].imageUrl : aboutImg} 
+              alt="Raani Chittroda Atelier" 
+              loading="lazy" 
+              className="h-full w-full object-cover" 
+            />
           </div>
         </div>
+
+        {/* Additional About Showcase Gallery */}
+        {aboutImages.length > 1 && (
+          <div className="mx-auto max-w-6xl px-6 sm:px-8 mt-16 pt-16 border-t border-border">
+            <div className="text-center mb-12">
+              <span className="eyebrow">Atelier Showcase</span>
+              <h3 className="font-display text-3xl sm:text-4xl mt-2">Inside Our House of Fine Jewellery</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+              {aboutImages.slice(1).map((item, idx) => (
+                <div key={idx} className="group overflow-hidden rounded-lg border border-border bg-secondary shadow-sm">
+                  <div className="aspect-video overflow-hidden">
+                    <img 
+                      src={item.imageUrl} 
+                      alt={item.title || "About image"} 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                    />
+                  </div>
+                  {(item.title || item.description) && (
+                    <div className="p-4">
+                      {item.title && <h4 className="font-display text-lg text-foreground">{item.title}</h4>}
+                      {item.description && <p className="text-xs text-muted-foreground mt-1">{item.description}</p>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="border-t border-border bg-secondary py-20 sm:py-28">

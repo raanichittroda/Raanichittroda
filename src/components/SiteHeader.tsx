@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 const nav = [
   { to: "/", label: "Home" },
   { to: "/collections", label: "Collections" },
+  { to: "/gallery", label: "Gallery" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ] as const;
@@ -18,15 +19,26 @@ export function SiteHeader() {
   const { items } = useWishlist();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [announcement, setAnnouncement] = useState("Wholesale | Bulk Orders | Custom Jewellery | PAN India Delivery");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [storeName, setStoreName] = useState("RAANI CHITTRODA");
 
   useEffect(() => {
-    async function loadCMS() {
-      const { data } = await supabase.from("settings").select("value").eq("key", "homepage_cms").single();
-      if (data?.value && (data.value as any).announcement) {
-        setAnnouncement((data.value as any).announcement);
+    async function loadData() {
+      const [{ data: cmsData }, { data: settingsData }] = await Promise.all([
+        supabase.from("settings").select("value").eq("key", "homepage_cms").single(),
+        supabase.from("settings").select("value").eq("key", "global_settings").single()
+      ]);
+
+      if (cmsData?.value && (cmsData.value as any).announcement) {
+        setAnnouncement((cmsData.value as any).announcement);
+      }
+      if (settingsData?.value) {
+        const val = settingsData.value as any;
+        if (val.logoUrl) setLogoUrl(val.logoUrl);
+        if (val.storeName) setStoreName(val.storeName);
       }
     }
-    loadCMS();
+    loadData();
   }, []);
 
   return (
@@ -45,10 +57,14 @@ export function SiteHeader() {
             <Menu className="h-5 w-5" />
           </button>
 
-          <Link to="/" className="flex items-center justify-self-center md:justify-self-start">
-            <span className="font-display text-xl tracking-[0.18em] text-foreground sm:text-2xl font-semibold">
-              RAANI CHITTRODA
-            </span>
+          <Link to="/" className="flex items-center justify-self-center md:justify-self-start gap-3">
+            {logoUrl ? (
+              <img src={logoUrl} alt={storeName} className="h-9 sm:h-11 max-w-[180px] object-contain" />
+            ) : (
+              <span className="font-display text-xl tracking-[0.18em] text-foreground sm:text-2xl font-semibold">
+                {storeName}
+              </span>
+            )}
           </Link>
 
           <nav className="hidden items-center justify-center gap-10 md:flex">

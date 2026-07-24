@@ -37,33 +37,102 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-function HeroSlider({ images, fallbackImage }: { images?: string[], fallbackImage: string }) {
-  const slideImages = images && images.filter(img => !!img).length > 0 
-    ? images.filter(img => !!img) 
-    : [fallbackImage];
+function HeroSlider({ slides, fallbackImage }: { slides?: HeroSlide[], fallbackImage: string }) {
+  const activeSlides = slides && slides.length > 0
+    ? slides.filter(s => !!s.imageUrl)
+    : [{ id: 'default', imageUrl: fallbackImage, heading: "Crafting Elegance in Gold & Silver", subheading: "Premium Gold & Silver Jewellery for Every Occasion." }];
+
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    if (slideImages.length <= 1) return;
+    if (activeSlides.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % slideImages.length);
-    }, 5000);
+      setCurrentIndex((prev) => (prev + 1) % activeSlides.length);
+    }, 6000);
     return () => clearInterval(interval);
-  }, [slideImages]);
+  }, [activeSlides]);
+
+  const currentSlide = activeSlides[currentIndex] || activeSlides[0];
 
   return (
-    <div className="absolute inset-0 h-full w-full overflow-hidden">
-      {slideImages.map((src, idx) => (
-        <img
-          key={src + idx}
-          src={src}
-          alt={`Hero slide ${idx + 1}`}
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
-            idx === currentIndex ? "opacity-70" : "opacity-0"
-          }`}
-        />
-      ))}
-    </div>
+    <section className="relative isolate overflow-hidden bg-ink text-background min-h-[82vh] md:min-h-[92vh] flex items-center">
+      {/* Background Images Slider */}
+      <div className="absolute inset-0 h-full w-full overflow-hidden">
+        {activeSlides.map((slide, idx) => (
+          <img
+            key={slide.imageUrl + idx}
+            src={slide.imageUrl}
+            alt={slide.heading || `Hero slide ${idx + 1}`}
+            className={`absolute inset-0 h-full w-full object-cover transition-all duration-1000 transform ${
+              idx === currentIndex ? "opacity-70 scale-100" : "opacity-0 scale-105 pointer-events-none"
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Dark Overlay Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-r from-ink/90 via-ink/65 to-transparent z-10" />
+
+      {/* Content Container */}
+      <div className="relative z-20 mx-auto flex w-full max-w-7xl flex-col justify-end px-6 py-20 sm:px-8 sm:py-28 md:justify-center">
+        <div className="max-w-xl space-y-6">
+          <span className="eyebrow text-gold tracking-[0.3em] font-semibold uppercase">RAANI CHITTRODA</span>
+          
+          <h1 className="font-display text-4xl leading-[1.05] text-background sm:text-6xl md:text-7xl transition-all duration-700">
+            {currentSlide.heading ? (
+              currentSlide.heading.includes("Gold & Silver") ? (
+                <>
+                  {currentSlide.heading.split("Gold & Silver")[0]}
+                  <em className="text-gold not-italic">Gold & Silver</em>
+                  {currentSlide.heading.split("Gold & Silver")[1]}
+                </>
+              ) : (
+                currentSlide.heading
+              )
+            ) : (
+              <>Crafting Elegance in <em className="text-gold not-italic">Gold & Silver</em></>
+            )}
+          </h1>
+
+          <p className="max-w-md text-sm leading-relaxed text-background/85 sm:text-base">
+            {currentSlide.subheading || "Premium Gold & Silver Jewellery for Every Occasion. Retail, Wholesale, Bulk Orders, and Custom Manufacturing."}
+          </p>
+
+          <div className="pt-3 flex flex-wrap gap-4">
+            <Link 
+              to={currentSlide.ctaLink || "/collections"} 
+              className="btn-gold"
+            >
+              {currentSlide.ctaText || "Shop Collections"} <ArrowRight className="h-4 w-4 ml-1" />
+            </Link>
+
+            <Link
+              to="/collections"
+              search={{ category: "silver-gift-articles" }}
+              className="inline-flex items-center justify-center gap-2 border border-background/60 px-8 py-3.5 text-[0.72rem] uppercase tracking-[0.28em] text-background transition hover:border-gold hover:text-gold"
+            >
+              Gift Edit
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Slider Navigation Dots & Controls */}
+      {activeSlides.length > 1 && (
+        <div className="absolute bottom-6 right-6 z-20 flex items-center gap-3 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+          {activeSlides.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentIndex(idx)}
+              className={`h-2.5 rounded-full transition-all ${
+                idx === currentIndex ? "w-8 bg-gold" : "w-2.5 bg-white/40 hover:bg-white/70"
+              }`}
+              aria-label={`Go to slide ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -75,50 +144,14 @@ function Home() {
   const featuredSlugs = ["silver-rakhis", "silver-murtis", "silver-necklaces", "silver-chains", "silver-gift-articles", "gold-jewellery"];
   const featured = categories.filter((c) => featuredSlugs.includes(c.slug));
 
+  const slidesData = cms.heroSlides && cms.heroSlides.length > 0 
+    ? cms.heroSlides 
+    : (cms.heroImages || []).map((img: string) => ({ imageUrl: img, heading: cms.heroHeading }));
+
   return (
     <div>
-      {/* Hero */}
-      <section className="relative isolate overflow-hidden bg-ink text-background">
-        <HeroSlider images={cms.heroImages} fallbackImage={heroImg} />
-        <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/60 to-transparent" />
-        <div className="relative mx-auto flex min-h-[78vh] max-w-7xl flex-col justify-end px-6 py-16 sm:px-8 sm:py-24 md:min-h-[88vh] md:justify-center">
-          <div className="max-w-xl">
-            <span className="eyebrow text-gold">RAANI CHITTRODA</span>
-            <h1 className="mt-5 font-display text-5xl leading-[1.02] text-background sm:text-6xl md:text-7xl">
-              {cms.heroHeading ? (
-                cms.heroHeading.includes("Gold & Silver") ? (
-                  <>
-                    {cms.heroHeading.split("Gold & Silver")[0]}
-                    <em className="text-gold not-italic">Gold & Silver</em>
-                    {cms.heroHeading.split("Gold & Silver")[1]}
-                  </>
-                ) : (
-                  cms.heroHeading
-                )
-              ) : (
-                <>
-                  Crafting Elegance in <em className="text-gold not-italic">Gold & Silver</em>
-                </>
-              )}
-            </h1>
-            <p className="mt-6 max-w-md text-sm leading-relaxed text-background/75 sm:text-base">
-              Premium Gold & Silver Jewellery for Every Occasion. Retail, Wholesale, Bulk Orders, and Custom Manufacturing.
-            </p>
-            <div className="mt-9 flex flex-wrap gap-3">
-              <Link to="/collections" className="btn-gold">
-                Shop Collections <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link
-                to="/collections"
-                search={{ category: "silver-gift-articles" }}
-                className="inline-flex items-center justify-center gap-2 border border-background/60 px-8 py-3.5 text-[0.72rem] uppercase tracking-[0.28em] text-background transition hover:border-gold hover:text-gold"
-              >
-                Gift Edit
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Dynamic Hero Slider */}
+      <HeroSlider slides={slidesData} fallbackImage={heroImg} />
 
       {/* Bulk Order Banner */}
       <section className="bg-gold py-16 sm:py-20 text-ink text-center px-6">
