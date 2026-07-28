@@ -1,7 +1,8 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Minus, Plus, ShieldCheck, Sparkles, Truck } from "lucide-react";
+import { Minus, Plus, ShieldCheck, Sparkles, Truck, Play, X, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/hooks/useWishlist";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { formatINR, getCategory, getProduct, getProductsByCategory, getProducts } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
@@ -10,7 +11,7 @@ import { WaIcon } from "@/components/ProductCard";
 import { buildWhatsAppUrl, productInquiryMessage } from "@/lib/whatsapp";
 import type { Product, ProductMedia } from "@/lib/products";
 import { getProductMedia } from "@/lib/products";
-import { Play, X } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/product/$id")({
   loader: async ({ params }) => {
@@ -64,6 +65,8 @@ export const Route = createFileRoute("/product/$id")({
 function ProductPage() {
   const { product, category, related, media } = Route.useLoaderData();
   const { add } = useCart();
+  const { toggle: toggleWishlist, has: hasWishlist } = useWishlist();
+  const isWishlisted = hasWishlist(product.id);
   const { addViewed, items: viewedIds } = useRecentlyViewed();
   const [qty, setQty] = useState(1);
   const [orderType, setOrderType] = useState<"Retail" | "Wholesale" | "Bulk">("Retail");
@@ -72,8 +75,38 @@ function ProductPage() {
   const [activeMedia, setActiveMedia] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
+  const [isHovered, setIsHovered] = useState(false);
+  const [imgErrorMap, setImgErrorMap] = useState<Record<number, boolean>>({});
+
+  // Slideshow config from admin settings
+  const [slideshowAuto, setSlideshowAuto] = useState(true);
+  const [slideshowSpeed, setSlideshowSpeed] = useState(4);
   
   const waUrl = buildWhatsAppUrl(productInquiryMessage({ name: product.name, id: product.id }));
+
+  const gallery = media.length > 0 
+    ? media 
+    : [{ id: 'fallback', media_type: 'image', file_url: product.image, thumbnail_url: null }] as ProductMedia[];
+
+  useEffect(() => {
+    async function loadSlideshowSettings() {
+      const { data } = await supabase.from("settings").select("value").eq("key", "slideshow_settings").single();
+      if (data?.value) {
+        const val = data.value as any;
+        if (val.product_slideshow_auto !== undefined) setSlideshowAuto(Boolean(val.product_slideshow_auto));
+        if (val.product_slideshow_speed) setSlideshowSpeed(Number(val.product_slideshow_speed));
+      }
+    }
+    loadSlideshowSettings();
+  }, []);
+
+  useEffect(() => {
+    if (!slideshowAuto || gallery.length <= 1 || isHovered || lightboxOpen) return;
+    const timer = setInterval(() => {
+      setActiveMedia((prev) => (prev + 1) % gallery.length);
+    }, slideshowSpeed * 1000);
+    return () => clearInterval(timer);
+  }, [slideshowAuto, slideshowSpeed, gallery.length, isHovered, lightboxOpen]);
 
   useEffect(() => {
     addViewed(product.id);
@@ -88,9 +121,8 @@ function ProductPage() {
     fetchRecentlyViewed();
   }, [viewedIds, product.id]);
 
-  const gallery = media.length > 0 
-    ? media 
-    : [{ id: 'fallback', media_type: 'image', file_url: product.image, thumbnail_url: null }] as ProductMedia[];
+  const currentMedia = gallery[activeMedia] || gallery[0];
+  const currentFileUrl = imgErrorMap[activeMedia] ? product.image : currentMedia.file_url;
 
   return (
     <div className="bg-background">
@@ -156,47 +188,88 @@ function ProductPage() {
         </nav>
       </div>
 
-      <div className="mx-auto grid max-w-7xl gap-12 px-6 pb-16 sm:px-8 md:grid-cols-2 md:gap-16">
-        <div className="flex flex-col gap-4">
-          <div className="group relative aspect-[4/5] overflow-hidden bg-secondary">
-            {gallery[activeMedia].media_type === 'video' ? (
+      <div className="mx-auto grid max-w-7xl gap-8 px-6 pb-16 sm:px-8 md:grid-cols-2 md:gap-12 items-start">
+        {/* Product Image Gallery Box */}
+        <div className="flex flex-col gap-4 w-full">
+          <div 
+            className="group relative w-full aspect-square max-h-[340px] sm:max-h-[460px] md:max-h-[500px] rounded-xl border border-border bg-white dark:bg-secondary/30 flex items-center justify-center overflow-hidden p-3 shadow-sm transition-all"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            {currentMedia.media_type === 'video' ? (
               <video 
-                src={gallery[activeMedia].file_url} 
+                src={currentFileUrl} 
                 controls 
                 playsInline
-                className="h-full w-full object-cover"
+                className="max-h-full max-w-full w-auto h-auto object-contain rounded-md"
               />
             ) : (
               <img 
-                src={gallery[activeMedia].file_url} 
+                src={currentFileUrl} 
                 alt={product.name} 
+                onError={() => setImgErrorMap(prev => ({ ...prev, [activeMedia]: true }))}
                 onClick={() => setLightboxOpen(true)}
-                className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110 cursor-zoom-in" 
+                className="max-h-full max-w-full w-auto h-auto object-contain mx-auto my-auto rounded-md cursor-zoom-in transition-transform duration-500 ease-out group-hover:scale-105" 
               />
             )}
+
+            {/* Slideshow controls */}
+            {gallery.length > 1 && (
+              <>
+                <button
+                  onClick={() => setActiveMedia((prev) => (prev - 1 + gallery.length) % gallery.length)}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm opacity-80 sm:opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
+                  aria-label="Previous Slide"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setActiveMedia((prev) => (prev + 1) % gallery.length)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm opacity-80 sm:opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
+                  aria-label="Next Slide"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+                  {gallery.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveMedia(idx)}
+                      className={`h-1.5 rounded-full transition-all ${activeMedia === idx ? "w-5 bg-gold" : "w-1.5 bg-white/50 hover:bg-white/80"}`}
+                      aria-label={`Slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {gallery.map((m, idx) => (
-              <button 
-                key={m.id} 
-                onClick={() => setActiveMedia(idx)}
-                className={`relative h-24 w-20 shrink-0 border-2 transition-colors ${activeMedia === idx ? 'border-gold' : 'border-transparent hover:border-border'}`}
-              >
-                <img src={m.media_type === 'video' && m.thumbnail_url ? m.thumbnail_url : m.file_url} alt={`Gallery thumbnail ${idx}`} loading="lazy" className="h-full w-full object-cover" />
-                {m.media_type === 'video' && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                    <Play className="w-6 h-6 text-white opacity-80" />
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
+
+          {gallery.length > 1 && (
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+              {gallery.map((m, idx) => (
+                <button 
+                  key={m.id} 
+                  onClick={() => setActiveMedia(idx)}
+                  className={`relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 rounded-lg overflow-hidden border-2 transition-all ${activeMedia === idx ? 'border-gold scale-95 shadow-sm' : 'border-transparent hover:border-border opacity-70 hover:opacity-100'}`}
+                >
+                  <img src={m.media_type === 'video' && m.thumbnail_url ? m.thumbnail_url : m.file_url} alt={`Gallery thumbnail ${idx}`} loading="lazy" className="h-full w-full object-contain p-1" />
+                  {m.media_type === 'video' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <Play className="w-5 h-5 text-white opacity-80" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="flex flex-col">
+        <div className="flex flex-col min-w-0">
           <span className="eyebrow">{category?.name}</span>
-          <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">{product.name}</h1>
-          <p className="mt-2 text-[10px] tracking-[0.28em] uppercase text-muted-foreground">
+          <h1 className="mt-2 font-display text-2xl sm:text-4xl md:text-5xl leading-tight text-foreground break-words max-w-full font-normal">
+            {product.name}
+          </h1>
+          <p className="mt-1.5 text-[10px] tracking-[0.28em] uppercase text-muted-foreground">
             ID · {product.id}
           </p>
           <p className="mt-6 font-display text-3xl text-foreground">{formatINR(product.retail_price)}</p>
@@ -279,6 +352,14 @@ function ProductPage() {
               <button onClick={() => add(product.id, qty)} disabled={product.in_stock === false} className="btn-gold flex-1 rounded-md disabled:opacity-50 text-sm tracking-widest">
                 Add to Cart
               </button>
+              <button 
+                onClick={() => toggleWishlist(product.id)}
+                className={`grid h-12 w-12 shrink-0 place-items-center rounded-md border transition-colors ${isWishlisted ? 'border-gold bg-gold/10 text-gold' : 'border-border text-foreground hover:border-gold hover:text-gold'}`}
+                aria-label="Save to Wishlist"
+                title={isWishlisted ? "Saved in Wishlist" : "Save to Wishlist"}
+              >
+                <Heart className={`h-5 w-5 ${isWishlisted ? "fill-gold text-gold" : ""}`} />
+              </button>
             </div>
           </div>
 
@@ -327,13 +408,13 @@ function ProductPage() {
       <StickyCart product={product} />
 
       {/* Lightbox */}
-      {lightboxOpen && gallery[activeMedia].media_type === 'image' && (
+      {lightboxOpen && currentMedia.media_type === 'image' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 sm:p-8" onClick={() => setLightboxOpen(false)}>
           <button className="absolute top-6 right-6 text-white hover:text-gold transition-colors" onClick={() => setLightboxOpen(false)}>
             <X className="w-8 h-8" />
           </button>
           <img 
-            src={gallery[activeMedia].file_url} 
+            src={currentFileUrl} 
             alt={product.name} 
             className="max-h-full max-w-full object-contain select-none"
             onClick={(e) => e.stopPropagation()} 

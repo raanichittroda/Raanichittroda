@@ -18,12 +18,12 @@ export function ProductCard({ product }: { product: Product }) {
         params={{ id: product.id }}
         className="relative block overflow-hidden bg-secondary"
       >
-        <div className="aspect-[4/5] w-full overflow-hidden">
+        <div className="aspect-[4/5] w-full overflow-hidden bg-white dark:bg-secondary/40 flex items-center justify-center p-2 border-b border-border/40">
           <img
             src={product.image}
             alt={product.name}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            className="h-full w-full object-contain transition-transform duration-700 ease-out group-hover:scale-105"
           />
         </div>
         <div className="absolute left-3 top-3 flex flex-col gap-1">
@@ -81,16 +81,16 @@ export function ProductCard({ product }: { product: Product }) {
             type="button"
             onClick={() => add(product.id, 1)}
             disabled={product.in_stock === false}
-            className="flex w-full items-center justify-center gap-2 border border-ink bg-ink px-3 py-2.5 text-[10px] uppercase tracking-[0.24em] text-background transition hover:bg-gold hover:border-gold hover:text-ink disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-1.5 border border-ink bg-ink px-2 py-2 text-[10px] uppercase tracking-[0.18em] sm:tracking-[0.24em] text-background transition hover:bg-gold hover:border-gold hover:text-ink disabled:opacity-50"
           >
-            <ShoppingBag className="h-3.5 w-3.5" /> Add to Cart
+            <ShoppingBag className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">Add to Cart</span>
           </button>
           
-          <div className="flex items-stretch gap-2">
+          <div className="grid grid-cols-2 gap-1.5">
             <Link
               to="/product/$id"
               params={{ id: product.id }}
-              className="flex flex-1 items-center justify-center border border-border px-3 py-2 text-[10px] uppercase tracking-[0.24em] text-muted-foreground transition hover:border-gold hover:text-gold"
+              className="flex items-center justify-center border border-border px-1.5 py-2 text-[9px] sm:text-[10px] uppercase tracking-wider sm:tracking-[0.18em] text-muted-foreground transition hover:border-gold hover:text-gold text-center whitespace-nowrap overflow-hidden"
             >
               View Details
             </Link>
@@ -98,10 +98,10 @@ export function ProductCard({ product }: { product: Product }) {
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Wholesale Inquiry on WhatsApp"
-              className="flex flex-1 items-center justify-center gap-1.5 border border-border px-3 py-2 text-[10px] uppercase tracking-[0.24em] text-foreground transition hover:border-gold hover:text-gold"
+              aria-label="Order Now on WhatsApp"
+              className="flex items-center justify-center gap-1 border border-border px-1.5 py-2 text-[9px] sm:text-[10px] uppercase tracking-wider sm:tracking-[0.18em] text-foreground transition hover:border-gold hover:text-gold text-center whitespace-nowrap overflow-hidden"
             >
-              <WaIcon /> Wholesale Inquiry
+              <WaIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 text-emerald-600" /> <span className="truncate">Order Now</span>
             </a>
           </div>
         </div>

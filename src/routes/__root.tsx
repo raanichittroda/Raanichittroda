@@ -171,9 +171,9 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 import { FloatingWhatsApp } from "../components/FloatingWhatsApp";
-
 import { useLocation } from "@tanstack/react-router";
 import { AdminAuthProvider } from "../lib/adminAuth";
+import { WishlistProvider } from "../lib/wishlist";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
@@ -183,14 +183,16 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AdminAuthProvider>
-        <CartProvider>
-          {!isAdminRoute && <SiteHeader />}
-          <main className={isAdminRoute ? "" : "min-h-screen"}>
-            <Outlet />
-          </main>
-          {!isAdminRoute && <SiteFooter />}
-          {!isAdminRoute && <FloatingWhatsApp />}
-        </CartProvider>
+        <WishlistProvider>
+          <CartProvider>
+            {!isAdminRoute && <SiteHeader />}
+            <main className={isAdminRoute ? "w-full max-w-full overflow-x-hidden" : "min-h-screen w-full max-w-full overflow-x-hidden"}>
+              <Outlet />
+            </main>
+            {!isAdminRoute && <SiteFooter />}
+            {!isAdminRoute && <FloatingWhatsApp />}
+          </CartProvider>
+        </WishlistProvider>
       </AdminAuthProvider>
     </QueryClientProvider>
   );

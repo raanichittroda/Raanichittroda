@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Award, ShieldCheck, Sparkles, Truck, Star } from "lucide-react";
+import { ArrowRight, Award, ShieldCheck, Sparkles, Truck, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import heroImg from "@/assets/hero.jpg";
 import aboutImg from "@/assets/about.jpg";
@@ -7,6 +7,7 @@ import { getCategories, getProducts } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { supabase } from "@/lib/supabase";
+import type { Product } from "@/lib/products";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,21 +19,23 @@ export const Route = createFileRoute("/")({
     ],
   }),
   loader: async () => {
-    const [categories, products, { data: cmsData }, { data: reviewsData }] = await Promise.all([
+    const [categories, products, { data: cmsData }, { data: reviewsData }, { data: slideshowData }] = await Promise.all([
       getCategories(),
       getProducts(),
       supabase.from("settings").select("value").eq("key", "homepage_cms").single(),
       supabase.from("settings").select("value").eq("key", "customer_reviews").single(),
+      supabase.from("settings").select("value").eq("key", "slideshow_settings").single(),
     ]);
 
     const cms = (cmsData?.value || {}) as any;
+    const slideshowSettings = (slideshowData?.value || {}) as any;
     const reviews = (reviewsData?.value || [
       { name: "Ananya Mehta", city: "Mumbai", comment: "The quality of wholesale silver murtis exceeded our expectations. Our customers love them.", rating: 5 },
       { name: "Rohan Iyer", city: "Bengaluru", comment: "Best rates for bulk festival gifting. The delivery was fast and the items were securely packed.", rating: 5 },
       { name: "Devika Rao", city: "New Delhi", comment: "Custom manufacturing was seamless. Raani Chittroda truly understands the nuances of fine jewellery.", rating: 5 },
     ]) as any[];
 
-    return { categories, products, cms, reviews };
+    return { categories, products, cms, reviews, slideshowSettings };
   },
   component: Home,
 });
@@ -136,11 +139,135 @@ function HeroSlider({ slides, fallbackImage }: { slides?: HeroSlide[], fallbackI
   );
 }
 
+// Product Slider Row Component (Max 8 items per slider row)
+function ProductSliderRow({ products, autoSlide = true, speed = 4 }: { products: Product[]; autoSlide?: boolean; speed?: number }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [itemsPerView, setItemsPerView] = useState(4);
+
+  useEffect(() => {
+    const updateItemsPerView = () => {
+      if (window.innerWidth >= 1024) setItemsPerView(4);
+      else if (window.innerWidth >= 640) setItemsPerView(3);
+      else setItemsPerView(2);
+    };
+    updateItemsPerView();
+    window.addEventListener("resize", updateItemsPerView);
+    return () => window.removeEventListener("resize", updateItemsPerView);
+  }, []);
+
+  const maxIndex = Math.max(0, products.length - itemsPerView);
+
+  useEffect(() => {
+    if (!autoSlide || products.length <= itemsPerView || isHovered) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
+    }, speed * 1000);
+    return () => clearInterval(interval);
+  }, [autoSlide, speed, products.length, itemsPerView, maxIndex, isHovered]);
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
+  };
+
+  return (
+    <div 
+      className="relative group w-full overflow-hidden py-1"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {products.length > itemsPerView && (
+        <>
+          <button
+            onClick={handlePrev}
+            className="absolute left-1 top-1/2 -translate-y-1/2 z-20 grid h-10 w-10 place-items-center rounded-full bg-black/70 text-white backdrop-blur-md opacity-90 sm:opacity-0 transition-all group-hover:opacity-100 hover:bg-gold hover:text-ink shadow-lg"
+            aria-label="Previous Products"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={handleNext}
+            className="absolute right-1 top-1/2 -translate-y-1/2 z-20 grid h-10 w-10 place-items-center rounded-full bg-black/70 text-white backdrop-blur-md opacity-90 sm:opacity-0 transition-all group-hover:opacity-100 hover:bg-gold hover:text-ink shadow-lg"
+            aria-label="Next Products"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </>
+      )}
+
+      <div className="overflow-hidden">
+        <div 
+          className="flex transition-transform duration-500 ease-out gap-4 sm:gap-6"
+          style={{ 
+            transform: `translateX(-${currentIndex * (100 / itemsPerView)}%)` 
+          }}
+        >
+          {products.map((product) => (
+            <div 
+              key={product.id} 
+              className="w-[calc(50%-0.5rem)] sm:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1.125rem)] shrink-0"
+            >
+              <ProductCard product={product} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {products.length > itemsPerView && (
+        <div className="mt-6 flex justify-center gap-1.5">
+          {Array.from({ length: maxIndex + 1 }).map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentIndex(idx)}
+              className={`h-1.5 rounded-full transition-all ${
+                idx === currentIndex ? "w-6 bg-gold" : "w-1.5 bg-border hover:bg-gold/50"
+              }`}
+              aria-label={`Slide group ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Utility to chunk array into sub-arrays of max size 8
+function chunkArray<T>(arr: T[], size = 8): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
+
 function Home() {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { categories, products, cms, reviews } = Route.useLoaderData();
-  const bestsellers = products.filter((p) => p.is_best_seller).slice(0, 4);
-  const newArrivals = products.filter((p) => p.is_new).slice(0, 4);
+  const { categories, products, cms, reviews, slideshowSettings } = Route.useLoaderData();
+
+  const cardAutoSlide = slideshowSettings.card_slideshow_auto !== undefined ? Boolean(slideshowSettings.card_slideshow_auto) : true;
+  const cardSlideSpeed = slideshowSettings.card_slideshow_speed ? Number(slideshowSettings.card_slideshow_speed) : 4;
+  const maxPerRow = slideshowSettings.card_max_per_row ? Number(slideshowSettings.card_max_per_row) : 8;
+
+  // 1. BEST SELLERS: filter products marked as best sellers
+  const allBestsellers = products.filter((p) => p.is_best_seller);
+  const bestsellers = allBestsellers.length > 0 ? allBestsellers : products.slice(0, 8);
+  const bestsellerIds = new Set(bestsellers.map((b) => b.id));
+
+  // 2. NEW ARRIVALS: strictly exclude any product that appears in bestsellers to ensure unique products
+  let rawNewArrivals = products.filter((p) => p.is_new && !bestsellerIds.has(p.id));
+  if (rawNewArrivals.length === 0) {
+    rawNewArrivals = products.filter((p) => !bestsellerIds.has(p.id));
+  }
+  const newArrivals = rawNewArrivals;
+
+  // Chunk products into sets of max 8 per slider row
+  const bestsellerChunks = chunkArray(bestsellers, maxPerRow);
+  const newArrivalChunks = chunkArray(newArrivals, maxPerRow);
+
   const featuredSlugs = ["silver-rakhis", "silver-murtis", "silver-necklaces", "silver-chains", "silver-gift-articles", "gold-jewellery"];
   const featured = categories.filter((c) => featuredSlugs.includes(c.slug));
 
@@ -190,17 +317,47 @@ function Home() {
         </div>
       </Section>
 
-      {/* Best Sellers */}
+      {/* Best Sellers (Auto-Slide Carousel - Max 8 Products Per Row) */}
       <Section eyebrow="House Favourites" title="Best Selling Pieces" subtitle="What our patrons have been loving.">
-        <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-          {bestsellers.map((p) => <ProductCard key={p.id} product={p} />)}
+        <div className="space-y-12">
+          {bestsellerChunks.map((chunk, idx) => (
+            <ProductSliderRow 
+              key={`bestseller-row-${idx}`} 
+              products={chunk} 
+              autoSlide={cardAutoSlide} 
+              speed={cardSlideSpeed} 
+            />
+          ))}
+        </div>
+        <div className="mt-12 text-center">
+          <Link
+            to="/collections"
+            className="inline-flex items-center gap-2 border border-gold px-8 py-3.5 text-xs tracking-[0.28em] uppercase text-foreground hover:bg-gold hover:text-ink transition duration-300 font-medium"
+          >
+            Show More <ArrowRight className="w-4 h-4 ml-1" />
+          </Link>
         </div>
       </Section>
 
-      {/* New Arrivals */}
+      {/* New Arrivals (Auto-Slide Carousel - Completely Unique Products) */}
       <Section eyebrow="Just In" title="New Arrivals" subtitle="Fresh from the atelier this season." dark>
-        <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-          {newArrivals.map((p) => <ProductCard key={p.id} product={p} />)}
+        <div className="space-y-12">
+          {newArrivalChunks.map((chunk, idx) => (
+            <ProductSliderRow 
+              key={`newarrival-row-${idx}`} 
+              products={chunk} 
+              autoSlide={cardAutoSlide} 
+              speed={cardSlideSpeed} 
+            />
+          ))}
+        </div>
+        <div className="mt-12 text-center">
+          <Link
+            to="/collections"
+            className="inline-flex items-center gap-2 border border-gold px-8 py-3.5 text-xs tracking-[0.28em] uppercase text-foreground hover:bg-gold hover:text-ink transition duration-300 font-medium"
+          >
+            Show More <ArrowRight className="w-4 h-4 ml-1" />
+          </Link>
         </div>
       </Section>
 

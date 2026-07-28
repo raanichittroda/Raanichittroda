@@ -144,8 +144,14 @@
 }
 
 @layer base {
+  html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
   * {
     border-color: var(--color-border);
+    box-sizing: border-box;
   }
 
   body {
@@ -154,6 +160,7 @@
     font-family: var(--font-sans);
     font-feature-settings: "ss01", "ss02";
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4 {

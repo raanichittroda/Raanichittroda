@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { Save, Plus, Trash2, Edit, Upload, Loader2, ArrowUp, ArrowDown, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Save, Plus, Trash2, Edit, Upload, Loader2, ArrowUp, ArrowDown, Image as ImageIcon, Sparkles, Sliders, Play, Settings } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { uploadMediaFile } from "@/lib/mediaUpload";
 
@@ -34,12 +34,21 @@ export interface GalleryImage {
 function HomepageCMS() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"hero" | "about" | "gallery" | "text">("hero");
+  const [activeTab, setActiveTab] = useState<"hero" | "slideshow" | "about" | "gallery" | "text">("hero");
 
   // CMS Content States
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
   const [aboutImages, setAboutImages] = useState<AboutImage[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+
+  // Slideshow Settings State
+  const [slideshowSettings, setSlideshowSettings] = useState({
+    product_slideshow_auto: true,
+    product_slideshow_speed: 4,
+    card_slideshow_auto: true,
+    card_slideshow_speed: 4,
+    card_max_per_row: 8,
+  });
   
   const [textCms, setTextCms] = useState({
     announcement: "Wholesale | Bulk Orders | Custom Jewellery | PAN India Delivery",
@@ -81,6 +90,12 @@ function HomepageCMS() {
       }));
     }
 
+    // Load Slideshow Settings
+    const { data: slideData } = await supabase.from("settings").select("value").eq("key", "slideshow_settings").single();
+    if (slideData?.value) {
+      setSlideshowSettings(prev => ({ ...prev, ...(slideData.value as any) }));
+    }
+
     // Load About CMS
     const { data: aboutData } = await supabase.from("settings").select("value").eq("key", "about_cms").single();
     if (aboutData?.value && (aboutData.value as any).images) {
@@ -109,22 +124,28 @@ function HomepageCMS() {
         }
       });
 
-      // 2. Save About Section Images
+      // 2. Save Slideshow Settings
+      const { error: err4 } = await supabase.from("settings").upsert({
+        key: "slideshow_settings",
+        value: slideshowSettings
+      });
+
+      // 3. Save About Section Images
       const { error: err2 } = await supabase.from("settings").upsert({
         key: "about_cms",
         value: { images: aboutImages }
       });
 
-      // 3. Save Gallery Page Images
+      // 4. Save Gallery Page Images
       const { error: err3 } = await supabase.from("settings").upsert({
         key: "gallery_cms",
         value: { images: galleryImages }
       });
 
-      if (err1 || err2 || err3) {
-        alert("Error saving CMS settings: " + (err1?.message || err2?.message || err3?.message));
+      if (err1 || err2 || err3 || err4) {
+        alert("Error saving CMS settings: " + (err1?.message || err2?.message || err3?.message || err4?.message));
       } else {
-        alert("All CMS images & content saved successfully!");
+        alert("All CMS images, Slideshow settings & content saved successfully!");
       }
     } catch (e: any) {
       alert("Failed to save: " + e.message);
@@ -200,7 +221,7 @@ function HomepageCMS() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-amber-600" /> Website Content & Image Manager
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Manage Hero Slider photos, About Section images, Gallery page photos & Site text.</p>
+          <p className="text-sm text-gray-500 mt-1">Manage Hero Slider photos, Product & Card slideshow settings, About Section images, Gallery page photos & Site text.</p>
         </div>
         <button
           onClick={handleSaveAll}
@@ -213,9 +234,10 @@ function HomepageCMS() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex border-b border-gray-200 bg-white px-4 pt-2 rounded-t-lg">
+      <div className="flex border-b border-gray-200 bg-white px-4 pt-2 rounded-t-lg overflow-x-auto">
         {[
           { id: "hero", label: `Hero Slider (${heroSlides.length})` },
+          { id: "slideshow", label: "Slideshow Settings" },
           { id: "about", label: `About Section (${aboutImages.length})` },
           { id: "gallery", label: `Gallery Page (${galleryImages.length})` },
           { id: "text", label: "Announcement & Text" },
@@ -223,7 +245,7 @@ function HomepageCMS() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${
+            className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab.id
                 ? "border-amber-600 text-amber-600"
                 : "border-transparent text-gray-500 hover:text-gray-900"
@@ -421,6 +443,111 @@ function HomepageCMS() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB: SLIDESHOW SETTINGS */}
+      {activeTab === "slideshow" && (
+        <div className="space-y-8 bg-white p-6 rounded-b-lg border border-t-0 border-gray-200">
+          <div className="border-b border-gray-200 pb-4">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Sliders className="w-5 h-5 text-amber-600" /> Full Slideshow & Carousel Settings
+            </h2>
+            <p className="text-xs text-gray-500 mt-1">Configure auto-play behavior, intervals, and layout settings for product media & product cards across the website.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Product Detail Image Slideshow Settings */}
+            <div className="p-5 border border-gray-200 rounded-lg bg-gray-50/70 space-y-5">
+              <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+                <span className="font-bold text-sm text-gray-900 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-amber-600" /> Product Image Slideshow
+                </span>
+                <span className="text-[10px] bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded">Product Details Page</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-semibold text-gray-800">Auto Slide Product Images</label>
+                  <p className="text-xs text-gray-500">Automatically switch product photos on detail page gallery.</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={slideshowSettings.product_slideshow_auto}
+                  onChange={(e) => setSlideshowSettings({ ...slideshowSettings, product_slideshow_auto: e.target.checked })}
+                  className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500 accent-amber-600 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Slideshow Speed (Seconds)</label>
+                <select
+                  value={slideshowSettings.product_slideshow_speed}
+                  onChange={(e) => setSlideshowSettings({ ...slideshowSettings, product_slideshow_speed: Number(e.target.value) })}
+                  className="w-full text-sm p-2.5 border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-amber-600"
+                >
+                  <option value={2}>2 Seconds (Fast)</option>
+                  <option value={3}>3 Seconds</option>
+                  <option value={4}>4 Seconds (Recommended)</option>
+                  <option value={5}>5 Seconds</option>
+                  <option value={6}>6 Seconds</option>
+                  <option value={8}>8 Seconds (Slow)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Product Card / Homepage Slider Settings */}
+            <div className="p-5 border border-gray-200 rounded-lg bg-gray-50/70 space-y-5">
+              <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+                <span className="font-bold text-sm text-gray-900 flex items-center gap-2">
+                  <Play className="w-4 h-4 text-amber-600" /> Homepage Product Card Slider
+                </span>
+                <span className="text-[10px] bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded">Best Sellers & New Arrivals</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-semibold text-gray-800">Auto Slide Product Cards</label>
+                  <p className="text-xs text-gray-500">Automatically scroll product cards in homepage carousels.</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={slideshowSettings.card_slideshow_auto}
+                  onChange={(e) => setSlideshowSettings({ ...slideshowSettings, card_slideshow_auto: e.target.checked })}
+                  className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500 accent-amber-600 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Slide Scroll Speed (Seconds)</label>
+                <select
+                  value={slideshowSettings.card_slideshow_speed}
+                  onChange={(e) => setSlideshowSettings({ ...slideshowSettings, card_slideshow_speed: Number(e.target.value) })}
+                  className="w-full text-sm p-2.5 border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-amber-600"
+                >
+                  <option value={2}>2 Seconds (Fast)</option>
+                  <option value={3}>3 Seconds</option>
+                  <option value={4}>4 Seconds (Recommended)</option>
+                  <option value={5}>5 Seconds</option>
+                  <option value={6}>6 Seconds</option>
+                  <option value={8}>8 Seconds (Slow)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Max Products Per Slider Row</label>
+                <input
+                  type="number"
+                  min={4}
+                  max={16}
+                  value={slideshowSettings.card_max_per_row}
+                  onChange={(e) => setSlideshowSettings({ ...slideshowSettings, card_max_per_row: Number(e.target.value) })}
+                  className="w-full text-sm p-2.5 border border-gray-300 rounded-md bg-white focus:ring-1 focus:ring-amber-600"
+                />
+                <p className="text-[11px] text-gray-500 mt-1">If products in section &gt; {slideshowSettings.card_max_per_row}, multiple slider rows of max {slideshowSettings.card_max_per_row} products each will be created.</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

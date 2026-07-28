@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { CartDrawer } from "./CartDrawer";
+import { WishlistDrawer } from "./WishlistDrawer";
 import { supabase } from "@/lib/supabase";
 
 const nav = [
@@ -16,7 +17,7 @@ const nav = [
 
 export function SiteHeader() {
   const { count, open } = useCart();
-  const { items } = useWishlist();
+  const { items, open: openWishlist } = useWishlist();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [announcement, setAnnouncement] = useState("Wholesale | Bulk Orders | Custom Jewellery | PAN India Delivery");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -84,7 +85,8 @@ export function SiteHeader() {
             <button
               type="button"
               className="relative -mr-2 p-2 text-foreground transition-colors hover:text-gold"
-              onClick={() => alert("Wishlist items: " + items.length)}
+              onClick={openWishlist}
+              aria-label="Open Wishlist"
             >
               <Heart className="h-5 w-5" />
               {items.length > 0 && (
@@ -135,6 +137,7 @@ export function SiteHeader() {
       )}
 
       <CartDrawer />
+      <WishlistDrawer />
     </>
   );
 }
